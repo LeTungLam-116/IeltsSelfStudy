@@ -10,6 +10,11 @@ public static class DependencyInjection
     {
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ICourseService, CourseService>();
+        services.AddScoped<IListeningExerciseService, ListeningExerciseService>();
+        services.AddScoped<IReadingExerciseService, ReadingExerciseService>();
+        services.AddScoped<IAttemptService, AttemptService>();
+        services.AddScoped<IWritingExerciseService, WritingExerciseService>();
+        services.AddScoped<ISpeakingExerciseService, SpeakingExerciseService>();
 
         return services;
     }
