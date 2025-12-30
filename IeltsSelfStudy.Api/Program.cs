@@ -1,11 +1,14 @@
 using IeltsSelfStudy.Application;
+using IeltsSelfStudy.Application.Abstractions;
 using IeltsSelfStudy.Infrastructure;
+using IeltsSelfStudy.Infrastructure.AI;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHttpClient<IOpenAiGradingService, OpenAiGradingService>();
 // Add services to the container.
 
 builder.Services.AddControllers();

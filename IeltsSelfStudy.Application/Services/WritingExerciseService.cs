@@ -2,6 +2,10 @@
 using IeltsSelfStudy.Application.Interfaces;
 using IeltsSelfStudy.Application.DTOs.Attempts;
 using IeltsSelfStudy.Domain.Entities;
+using IeltsSelfStudy.Application.Common;
+using IeltsSelfStudy.Application.Abstractions;
+using System.Text.Json;
+using IeltsSelfStudy.Application.DTOs.AI;
 
 namespace IeltsSelfStudy.Application.Services;
 
@@ -9,13 +13,16 @@ public class WritingExerciseService : IWritingExerciseService
 {
     private readonly IGenericRepository<WritingExercise> _writingRepo;
     private readonly IGenericRepository<Attempt> _attemptRepo;
+    private readonly IOpenAiGradingService _aiGradingService;
 
     public WritingExerciseService(
         IGenericRepository<WritingExercise> writingRepo,
-        IGenericRepository<Attempt> attemptRepo)
+        IGenericRepository<Attempt> attemptRepo,
+        IOpenAiGradingService aiGradingService)
     {
         _writingRepo = writingRepo;
         _attemptRepo = attemptRepo;
+        _aiGradingService = aiGradingService;
     }
 
     public async Task<List<WritingExerciseDto>> GetAllAsync()
@@ -92,7 +99,29 @@ public class WritingExerciseService : IWritingExerciseService
         if (exercise is null)
             throw new InvalidOperationException("Writing exercise not found.");
 
-        // 2. Tạo JSON để lưu + gửi cho AI (tạm thời chỉ lưu)
+        // 2. Tạo prompt cho AI
+        var prompt = CreatePromptForAI(exercise, request);
+
+        // 3. Gọi AI để chấm điểm
+        WritingFeedbackDto aiFeedback;
+        try
+        {
+            aiFeedback = await _aiGradingService.GradeWritingAsync(prompt);
+        }
+        catch (Exception ex)
+        {
+            // Log error nếu cần
+            throw new InvalidOperationException($"Failed to grade writing with AI: {ex.Message}", ex);
+        }
+
+        // 4. Chuyển đổi feedback từ AI thành JSON để lưu vào database
+        var feedbackJson = JsonSerializer.Serialize(aiFeedback, new JsonSerializerOptions 
+        { 
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase // Đảm bảo format đúng
+        });
+
+        // 5. Tạo JSON để lưu user answer (giữ nguyên logic cũ)
         var payloadForAi = new
         {
             essayText = request.EssayText,
@@ -101,34 +130,18 @@ public class WritingExerciseService : IWritingExerciseService
             level = exercise.Level,
             targetBand = request.TargetBand
         };
+        var userAnswerJson = JsonSerializer.Serialize(payloadForAi);
 
-        var userAnswerJson = System.Text.Json.JsonSerializer.Serialize(payloadForAi);
-
-        // 3. TODO: Gọi AI thật ở đây
-        // =======================================
-        // Tạm thời: chấm điểm fake theo số từ
-        var wordCount = request.EssayText.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
-        double? score = null;
-        double? maxScore = 9.0;
-        string feedback = "Demo feedback: hãy tích hợp AI để chấm thật.";
-
-        if (wordCount >= exercise.MinWordCount)
-        {
-            // ví dụ: điểm tỷ lệ theo số từ
-            score = Math.Min(9.0, 3.0 + wordCount / 50.0);
-            feedback = $"Bài viết {wordCount} từ. Đây là điểm demo {score:F1}/9.0. Sau này thay bằng AI.";
-        }
-
-        // 4. Lưu Attempt
+        // 6. Lưu Attempt với điểm và feedback từ AI
         var attempt = new Attempt
         {
             UserId = request.UserId,
             Skill = "Writing",
             ExerciseId = writingExerciseId,
-            Score = score,
-            MaxScore = maxScore,
+            Score = aiFeedback.OverallBand, // Dùng điểm từ AI
+            MaxScore = 9.0, // IELTS Writing max là 9.0
             UserAnswerJson = userAnswerJson,
-            AiFeedback = feedback,
+            AiFeedback = feedbackJson, // Lưu feedback JSON từ AI
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -136,14 +149,54 @@ public class WritingExerciseService : IWritingExerciseService
         await _attemptRepo.AddAsync(attempt);
         await _attemptRepo.SaveChangesAsync();
 
-        // 5. Trả response
+        // 7. Trả response
         return new EvaluateWritingResponse
         {
             AttemptId = attempt.Id,
-            Score = score,
-            MaxScore = maxScore,
-            Feedback = feedback
+            Score = aiFeedback.OverallBand,
+            MaxScore = 9.0,
+            Feedback = feedbackJson // Trả về feedback JSON
         };
+    }
+
+    /// <summary>
+    /// Tạo prompt chi tiết cho AI để chấm bài Writing
+    /// </summary>
+    private static string CreatePromptForAI(WritingExercise exercise, EvaluateWritingRequest request)
+    {
+        var prompt = $@"You are an experienced IELTS Writing examiner. Please evaluate the following essay according to IELTS Writing Task {exercise.TaskType} criteria.
+
+        **Question:**
+        {exercise.Question}
+
+        **Topic:** {exercise.Topic ?? "General"}
+
+        **Level:** {exercise.Level}
+
+        **Target Band:** {(request.TargetBand.HasValue ? request.TargetBand.Value.ToString("F1") : "Not specified")}
+
+        **Minimum Word Count:** {exercise.MinWordCount}
+
+        **Student's Essay:**
+        {request.EssayText}
+
+        Please evaluate this essay based on the four IELTS Writing criteria:
+        1. **Task Response (TR)**: How well the essay addresses the task requirements
+        2. **Coherence and Cohesion (CC)**: How well the essay is organized and connected
+        3. **Lexical Resource (LR)**: Vocabulary range and accuracy
+        4. **Grammar Range and Accuracy (GRA)**: Grammar usage and accuracy
+
+        Provide:
+        - An overall band score (0-9)
+        - Individual scores for each criterion (TR, CC, LR, GRA)
+        - Strengths of the essay
+        - Areas for improvement
+        - Specific corrections with explanations
+        - A better version example of key sections
+
+        Be constructive and beginner-friendly in your feedback.";
+
+        return prompt;
     }
 
     private static WritingExerciseDto MapToDto(WritingExercise e) =>
