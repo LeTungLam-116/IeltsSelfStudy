@@ -173,9 +173,11 @@ public class IeltsDbContext : DbContext
             entity.Property(a => a.MaxScore)
                   .HasColumnType("float");
 
-            entity.Property(a => a.UserAnswerJson);
+            entity.Property(a => a.UserAnswerJson)
+                  .HasColumnType("nvarchar(max)"); // Thêm dòng này
 
-            entity.Property(a => a.AiFeedback);
+            entity.Property(a => a.AiFeedback)
+                  .HasColumnType("nvarchar(max)"); // Thêm dòng này - QUAN TRỌNG!
 
             entity.Property(a => a.IsActive)
                   .IsRequired();

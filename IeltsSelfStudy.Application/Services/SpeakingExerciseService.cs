@@ -1,7 +1,8 @@
-﻿using System.Text.Json;
+﻿using IeltsSelfStudy.Application.Common;
 using IeltsSelfStudy.Application.DTOs.SpeakingExercises;
 using IeltsSelfStudy.Application.Interfaces;
 using IeltsSelfStudy.Domain.Entities;
+using System.Text.Json;
 
 namespace IeltsSelfStudy.Application.Services;
 
@@ -94,8 +95,9 @@ public class SpeakingExerciseService : ISpeakingExerciseService
 
         // TODO: gọi AI thật ở đây
         double? maxScore = 9.0;
-        double? score = Math.Min(9.0, 3.0 + wordCount / 25.0); // demo
-        string feedback = $"Demo feedback: Bạn trả lời khoảng {wordCount} từ. Hãy nói trôi chảy hơn và dùng từ nối.";
+        double? score = null;
+        double overallBand = 4.5;
+        string feedbackJson = FeedbackJsonFactory.CreateSpeaking(overallBand);
 
         // userAnswerJson để xem lại history
         var payload = new
@@ -118,7 +120,7 @@ public class SpeakingExerciseService : ISpeakingExerciseService
             Score = score,
             MaxScore = maxScore,
             UserAnswerJson = userAnswerJson,
-            AiFeedback = feedback,
+            AiFeedback = feedbackJson,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -131,7 +133,7 @@ public class SpeakingExerciseService : ISpeakingExerciseService
             AttemptId = attempt.Id,
             Score = score,
             MaxScore = maxScore,
-            Feedback = feedback
+            Feedback = feedbackJson
         };
     }
 
