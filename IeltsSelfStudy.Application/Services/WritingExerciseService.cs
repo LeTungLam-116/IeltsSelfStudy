@@ -94,15 +94,25 @@ public class WritingExerciseService : IWritingExerciseService
 
     public async Task<EvaluateWritingResponse> EvaluateAsync(int writingExerciseId, EvaluateWritingRequest request)
     {
-        // 1. Lấy đề Writing
+        // 1. Lấy đề Writing (DbContext tự đóng sau khi xong)
         var exercise = await _writingRepo.GetByIdAsync(writingExerciseId);
         if (exercise is null)
             throw new InvalidOperationException("Writing exercise not found.");
 
-        // 2. Tạo prompt cho AI
+        // 2. Copy dữ liệu cần thiết (không cần entity nữa)
+        var exerciseData = new
+        {
+            Question = exercise.Question,
+            TaskType = exercise.TaskType,
+            Topic = exercise.Topic,
+            Level = exercise.Level,
+            MinWordCount = exercise.MinWordCount
+        };
+
+        // 3. Tạo prompt cho AI
         var prompt = CreatePromptForAI(exercise, request);
 
-        // 3. Gọi AI để chấm điểm
+        // 4. Gọi AI để chấm điểm (DbContext đã đóng)
         WritingFeedbackDto aiFeedback;
         try
         {
@@ -110,52 +120,61 @@ public class WritingExerciseService : IWritingExerciseService
         }
         catch (Exception ex)
         {
-            // Log error nếu cần
             throw new InvalidOperationException($"Failed to grade writing with AI: {ex.Message}", ex);
         }
 
-        // 4. Chuyển đổi feedback từ AI thành JSON để lưu vào database
+        // 5. Lưu attempt (DbContext mới, nhanh)
+        return await SaveAttemptAsync(writingExerciseId, request, exerciseData, aiFeedback);
+    }
+
+    // Lưu attempt vào database (DbContext mới, không giữ quá lâu)
+    private async Task<EvaluateWritingResponse> SaveAttemptAsync(
+        int writingExerciseId,
+        EvaluateWritingRequest request,
+        dynamic exerciseData,
+        WritingFeedbackDto aiFeedback)
+    {
+        // Chuyển đổi feedback từ AI thành JSON
         var feedbackJson = JsonSerializer.Serialize(aiFeedback, new JsonSerializerOptions 
         { 
             WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase // Đảm bảo format đúng
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
 
-        // 5. Tạo JSON để lưu user answer (giữ nguyên logic cũ)
+        // Tạo JSON để lưu user answer
         var payloadForAi = new
         {
             essayText = request.EssayText,
-            question = exercise.Question,
-            topic = exercise.Topic,
-            level = exercise.Level,
+            question = exerciseData.Question,
+            topic = exerciseData.Topic,
+            level = exerciseData.Level,
             targetBand = request.TargetBand
         };
         var userAnswerJson = JsonSerializer.Serialize(payloadForAi);
 
-        // 6. Lưu Attempt với điểm và feedback từ AI
+        // Lưu Attempt với điểm và feedback từ AI
         var attempt = new Attempt
         {
             UserId = request.UserId,
             Skill = "Writing",
             ExerciseId = writingExerciseId,
-            Score = aiFeedback.OverallBand, // Dùng điểm từ AI
-            MaxScore = 9.0, // IELTS Writing max là 9.0
+            Score = aiFeedback.OverallBand,
+            MaxScore = 9.0,
             UserAnswerJson = userAnswerJson,
-            AiFeedback = feedbackJson, // Lưu feedback JSON từ AI
+            AiFeedback = feedbackJson,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
 
         await _attemptRepo.AddAsync(attempt);
-        await _attemptRepo.SaveChangesAsync();
+        await _attemptRepo.SaveChangesAsync(); // DbContext mới, nhanh
 
-        // 7. Trả response
         return new EvaluateWritingResponse
         {
             AttemptId = attempt.Id,
             Score = aiFeedback.OverallBand,
             MaxScore = 9.0,
-            Feedback = feedbackJson // Trả về feedback JSON
+            Feedback = feedbackJson
         };
     }
 

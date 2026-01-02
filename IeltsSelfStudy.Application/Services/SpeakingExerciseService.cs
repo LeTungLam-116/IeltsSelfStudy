@@ -2,7 +2,9 @@
 using IeltsSelfStudy.Application.DTOs.SpeakingExercises;
 using IeltsSelfStudy.Application.Interfaces;
 using IeltsSelfStudy.Domain.Entities;
+using IeltsSelfStudy.Application.Abstractions;
 using System.Text.Json;
+using IeltsSelfStudy.Application.DTOs.AI;
 
 namespace IeltsSelfStudy.Application.Services;
 
@@ -10,13 +12,16 @@ public class SpeakingExerciseService : ISpeakingExerciseService
 {
     private readonly IGenericRepository<SpeakingExercise> _speakingRepo;
     private readonly IGenericRepository<Attempt> _attemptRepo;
+    private readonly IOpenAiGradingService _aiGradingService;
 
     public SpeakingExerciseService(
         IGenericRepository<SpeakingExercise> speakingRepo,
-        IGenericRepository<Attempt> attemptRepo)
+        IGenericRepository<Attempt> attemptRepo,
+        IOpenAiGradingService aiGradingService)
     {
         _speakingRepo = speakingRepo;
         _attemptRepo = attemptRepo;
+        _aiGradingService = aiGradingService;
     }
 
     public async Task<List<SpeakingExerciseDto>> GetAllAsync()
@@ -84,30 +89,61 @@ public class SpeakingExerciseService : ISpeakingExerciseService
         return true;
     }
 
-    // ✅ Evaluate: demo chấm điểm + lưu attempt (sau này thay bằng AI thật)
     public async Task<EvaluateSpeakingResponse> EvaluateAsync(int speakingExerciseId, EvaluateSpeakingRequest request)
     {
+        // 1. Lấy exercise (DbContext tự đóng sau khi xong)
         var exercise = await _speakingRepo.GetByIdAsync(speakingExerciseId);
         if (exercise is null)
             throw new InvalidOperationException("Speaking exercise not found.");
 
-        int wordCount = request.AnswerText.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+        // 2. Copy dữ liệu cần thiết (không cần entity nữa)
+        var exerciseData = new
+        {
+            Question = exercise.Question,
+            Part = exercise.Part,
+            Topic = exercise.Topic,
+            Level = exercise.Level
+        };
 
-        // TODO: gọi AI thật ở đây
-        double? maxScore = 9.0;
-        double? score = null;
-        double overallBand = 4.5;
-        string feedbackJson = FeedbackJsonFactory.CreateSpeaking(overallBand);
+        // 3. Gọi AI (DbContext đã đóng)
+        var prompt = CreatePromptForAI(exercise, request);
+        
+        SpeakingFeedbackDto aiFeedback;
+        try
+        {
+            aiFeedback = await _aiGradingService.GradeSpeakingAsync(prompt);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to grade speaking with AI: {ex.Message}", ex);
+        }
 
-        // userAnswerJson để xem lại history
+        // 4. Lưu attempt (DbContext mới, nhanh)
+        return await SaveAttemptAsync(speakingExerciseId, request, exerciseData, aiFeedback);
+    }
+
+    private async Task<EvaluateSpeakingResponse> SaveAttemptAsync(
+        int speakingExerciseId, 
+        EvaluateSpeakingRequest request,
+        dynamic exerciseData,
+        SpeakingFeedbackDto aiFeedback)
+    {
+        // 4. Chuyển đổi feedback từ AI thành JSON để lưu vào database
+        var feedbackJson = JsonSerializer.Serialize(aiFeedback, new JsonSerializerOptions 
+        { 
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
+
+        // Tạo JSON để lưu user answer
         var payload = new
         {
             answerText = request.AnswerText,
-            wordCount,
-            question = exercise.Question,
-            part = exercise.Part,
-            topic = exercise.Topic,
-            level = exercise.Level,
+            wordCount = request.AnswerText.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length,
+            question = exerciseData.Question,
+            part = exerciseData.Part,
+            topic = exerciseData.Topic,
+            level = exerciseData.Level,
             targetBand = request.TargetBand
         };
         string userAnswerJson = JsonSerializer.Serialize(payload);
@@ -117,8 +153,8 @@ public class SpeakingExerciseService : ISpeakingExerciseService
             UserId = request.UserId,
             Skill = "Speaking",
             ExerciseId = speakingExerciseId,
-            Score = score,
-            MaxScore = maxScore,
+            Score = aiFeedback.OverallBand,
+            MaxScore = 9.0,
             UserAnswerJson = userAnswerJson,
             AiFeedback = feedbackJson,
             IsActive = true,
@@ -131,10 +167,50 @@ public class SpeakingExerciseService : ISpeakingExerciseService
         return new EvaluateSpeakingResponse
         {
             AttemptId = attempt.Id,
-            Score = score,
-            MaxScore = maxScore,
+            Score = aiFeedback.OverallBand,
+            MaxScore = 9.0,
             Feedback = feedbackJson
         };
+    }
+
+    /// <summary>
+    /// Tạo prompt chi tiết cho AI để chấm bài Speaking
+    /// </summary>
+    private static string CreatePromptForAI(SpeakingExercise exercise, EvaluateSpeakingRequest request)
+    {
+        var prompt = $@"You are an experienced IELTS Speaking examiner. Please evaluate the following speaking answer according to IELTS Speaking {exercise.Part} criteria.
+
+        **Question:**
+        {exercise.Question}
+
+        **Part:** {exercise.Part}
+
+        **Topic:** {exercise.Topic ?? "General"}
+
+        **Level:** {exercise.Level}
+
+        **Target Band:** {(request.TargetBand.HasValue ? request.TargetBand.Value.ToString("F1") : "Not specified")}
+
+        **Student's Answer:**
+        {request.AnswerText}
+
+        Please evaluate this answer based on the four IELTS Speaking criteria:
+        1. **Fluency & Coherence**: How smoothly and clearly the candidate speaks
+        2. **Lexical Resource**: Vocabulary range and accuracy
+        3. **Grammatical Range & Accuracy**: Grammar usage and accuracy
+        4. **Pronunciation**: Clarity and accuracy of pronunciation
+
+        Provide:
+        - An overall band score (0-9)
+        - Individual scores for each criterion (Fluency, Lexical, Grammar, Pronunciation)
+        - Strengths of the answer
+        - Areas for improvement
+        - Specific corrections with explanations
+        - A better answer example
+
+        Be constructive and beginner-friendly in your feedback.";
+
+        return prompt;
     }
 
     private static SpeakingExerciseDto MapToDto(SpeakingExercise e) => new()
