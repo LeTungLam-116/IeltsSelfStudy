@@ -57,4 +57,12 @@ public class ListeningExercisesController : ControllerBase
         if (!success) return NotFound();
         return NoContent();
     }
+
+    // POST /api/listeningexercises/5/evaluate
+    [HttpPost("{id:int}/evaluate")]
+    public async Task<IActionResult> Evaluate(int id, [FromBody] EvaluateListeningRequest request)
+    {
+        var result = await _listeningService.EvaluateAsync(id, request);
+        return Ok(result);
+    }
 }

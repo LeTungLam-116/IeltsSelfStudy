@@ -57,4 +57,12 @@ public class ReadingExercisesController : ControllerBase
         if (!success) return NotFound();
         return NoContent();
     }
+
+    // POST /api/readingexercises/5/evaluate
+    [HttpPost("{id:int}/evaluate")]
+    public async Task<IActionResult> Evaluate(int id, [FromBody] EvaluateReadingRequest request)
+    {
+        var result = await _readingService.EvaluateAsync(id, request);
+        return Ok(result);
+    }
 }

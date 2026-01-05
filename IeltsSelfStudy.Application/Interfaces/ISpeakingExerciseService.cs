@@ -9,6 +9,5 @@ public interface ISpeakingExerciseService
     Task<SpeakingExerciseDto> CreateAsync(CreateSpeakingExerciseRequest request);
     Task<SpeakingExerciseDto?> UpdateAsync(int id, UpdateSpeakingExerciseRequest request);
     Task<bool> DeleteAsync(int id);
-
     Task<EvaluateSpeakingResponse> EvaluateAsync(int speakingExerciseId, EvaluateSpeakingRequest request);
 }
