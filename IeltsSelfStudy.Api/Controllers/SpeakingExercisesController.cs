@@ -51,14 +51,7 @@ public class SpeakingExercisesController : ControllerBase
     [HttpPost("{id:int}/evaluate")]
     public async Task<IActionResult> Evaluate(int id, [FromBody] EvaluateSpeakingRequest request)
     {
-        try
-        {
-            var result = await _speakingService.EvaluateAsync(id, request);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+        var result = await _speakingService.EvaluateAsync(id, request);
+        return Ok(result);
     }
 }

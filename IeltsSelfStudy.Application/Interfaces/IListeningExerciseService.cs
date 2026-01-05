@@ -9,4 +9,5 @@ public interface IListeningExerciseService
     Task<ListeningExerciseDto> CreateAsync(CreateListeningExerciseRequest request);
     Task<ListeningExerciseDto?> UpdateAsync(int id, UpdateListeningExerciseRequest request);
     Task<bool> DeleteAsync(int id);
+    Task<EvaluateListeningResponse> EvaluateAsync(int listeningExerciseId, EvaluateListeningRequest request);
 }

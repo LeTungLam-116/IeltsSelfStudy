@@ -40,6 +40,14 @@ public class AttemptsController : ControllerBase
         return Ok(list);
     }
 
+    // GET /api/attempts/by-user-skill?userId=1&skill=Listening
+    [HttpGet("by-user-skill")]
+    public async Task<IActionResult> GetByUserAndSkill([FromQuery] int userId, [FromQuery] string skill)
+    {
+        var list = await _attemptService.GetByUserAndSkillAsync(userId, skill);
+        return Ok(list);
+    }
+
     // GET /api/attempts/by-exercise
     // /api/attempts/by-exercise?skill=Listening&exerciseId=5
     [HttpGet("by-exercise")]
