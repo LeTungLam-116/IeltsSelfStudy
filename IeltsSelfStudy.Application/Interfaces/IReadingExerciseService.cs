@@ -9,4 +9,5 @@ public interface IReadingExerciseService
     Task<ReadingExerciseDto> CreateAsync(CreateReadingExerciseRequest request);
     Task<ReadingExerciseDto?> UpdateAsync(int id, UpdateReadingExerciseRequest request);
     Task<bool> DeleteAsync(int id);
+    Task<EvaluateReadingResponse> EvaluateAsync(int readingExerciseId, EvaluateReadingRequest request);
 }

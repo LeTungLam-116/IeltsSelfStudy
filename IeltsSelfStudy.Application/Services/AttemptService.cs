@@ -50,6 +50,16 @@ public class AttemptService : IAttemptService
             .ToList();
     }
 
+    public async Task<List<AttemptDto>> GetByUserAndSkillAsync(int userId, string skill)
+    {
+        var list = await _attemptRepo.GetAllAsync();
+        return list
+            .Where(a => a.UserId == userId && a.Skill == skill && a.IsActive)
+            .OrderByDescending(a => a.CreatedAt)
+            .Select(MapToDto)
+            .ToList();
+    }
+
     public async Task<List<AttemptDto>> GetByExerciseAsync(string skill, int exerciseId)
     {
         var list = await _attemptRepo.GetAllAsync();

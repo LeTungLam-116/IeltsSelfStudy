@@ -36,16 +36,8 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateUserRequest request)
     {
-        try
-        {
-            var created = await _userService.CreateAsync(request);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
-        }
-        catch (InvalidOperationException ex)
-        {
-            // Ví dụ: Email đã tồn tại
-            return BadRequest(new { message = ex.Message });
-        }
+        var created = await _userService.CreateAsync(request);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);  
     }
 
     // UPDATE
