@@ -10,6 +10,8 @@ public interface IAttemptService
 
     Task<List<AttemptDto>> GetByUserAsync(int userId);
 
+    Task<List<AttemptDto>> GetByUserAndSkillAsync(int userId, string skill);
+
     Task<List<AttemptDto>> GetByExerciseAsync(string skill, int exerciseId);
 
     Task<AttemptDto?> UpdateAsync(int id, UpdateAttemptRequest request);

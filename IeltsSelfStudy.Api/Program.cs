@@ -2,6 +2,7 @@ using IeltsSelfStudy.Application;
 using IeltsSelfStudy.Application.Abstractions;
 using IeltsSelfStudy.Infrastructure;
 using IeltsSelfStudy.Infrastructure.AI;
+using IeltsSelfStudy.Api.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
+
+app.UseGlobalExceptionHandler();
 
 app.UseAuthorization();
 

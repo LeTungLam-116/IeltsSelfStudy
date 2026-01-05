@@ -15,6 +15,7 @@ public static class DependencyInjection
         services.AddScoped<IAttemptService, AttemptService>();
         services.AddScoped<IWritingExerciseService, WritingExerciseService>();
         services.AddScoped<ISpeakingExerciseService, SpeakingExerciseService>();
+        services.AddScoped<IQuestionService, QuestionService>();
 
         return services;
     }
