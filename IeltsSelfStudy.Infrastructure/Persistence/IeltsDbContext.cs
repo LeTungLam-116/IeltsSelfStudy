@@ -17,7 +17,7 @@ public class IeltsDbContext : DbContext
     public DbSet<Attempt> Attempts => Set<Attempt>();
     public DbSet<WritingExercise> WritingExercises => Set<WritingExercise>();
     public DbSet<SpeakingExercise> SpeakingExercises => Set<SpeakingExercise>();
-
+    public DbSet<Question> Questions => Set<Question>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -254,6 +254,57 @@ public class IeltsDbContext : DbContext
             entity.Property(e => e.CreatedAt).IsRequired();
         });
 
+        // Question config by Fluent API
+        modelBuilder.Entity<Question>(entity =>
+        {
+            entity.ToTable("Questions");
+
+            entity.HasKey(q => q.Id);
+
+            entity.Property(q => q.Id)
+                  .ValueGeneratedOnAdd();
+
+            entity.Property(q => q.Skill)
+                  .IsRequired()
+                  .HasMaxLength(50);
+
+            entity.Property(q => q.ExerciseId)
+                  .IsRequired();
+
+            entity.Property(q => q.QuestionNumber)
+                  .IsRequired();
+
+            entity.Property(q => q.QuestionText)
+                  .IsRequired();
+
+            entity.Property(q => q.QuestionType)
+                  .IsRequired()
+                  .HasMaxLength(50)
+                  .HasDefaultValue("MultipleChoice");
+
+            entity.Property(q => q.CorrectAnswer)
+                  .IsRequired()
+                  .HasMaxLength(500);
+
+            entity.Property(q => q.Points)
+                  .IsRequired()
+                  .HasColumnType("float")
+                  .HasDefaultValue(1.0);
+
+            entity.Property(q => q.OptionsJson)
+                  .HasColumnType("nvarchar(max)");
+
+            entity.Property(q => q.IsActive)
+                  .IsRequired()
+                  .HasDefaultValue(true);
+
+            entity.Property(q => q.CreatedAt)
+                  .IsRequired();
+
+            // Index để query nhanh hơn
+            entity.HasIndex(q => new { q.Skill, q.ExerciseId });
+            entity.HasIndex(q => new { q.ExerciseId, q.QuestionNumber });
+        });
 
     }
 }
