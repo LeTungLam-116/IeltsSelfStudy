@@ -18,6 +18,8 @@ public class IeltsDbContext : DbContext
     public DbSet<WritingExercise> WritingExercises => Set<WritingExercise>();
     public DbSet<SpeakingExercise> SpeakingExercises => Set<SpeakingExercise>();
     public DbSet<Question> Questions => Set<Question>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<CourseExercise> CourseExercises => Set<CourseExercise>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -75,6 +77,43 @@ public class IeltsDbContext : DbContext
 
             entity.Property(c => c.CreatedAt)
                   .IsRequired();
+        });
+
+        // CourseExercise config by Fluent API
+        modelBuilder.Entity<CourseExercise>(entity =>
+        {
+            entity.ToTable("CourseExercises");
+
+            entity.HasKey(ce => ce.Id);
+
+            entity.Property(ce => ce.Id)
+                  .ValueGeneratedOnAdd();
+
+            entity.Property(ce => ce.CourseId)
+                  .IsRequired();
+
+            entity.Property(ce => ce.Skill)
+                  .IsRequired()
+                  .HasMaxLength(50);
+
+            entity.Property(ce => ce.ExerciseId)
+                  .IsRequired();
+
+            entity.Property(ce => ce.Order)
+                  .IsRequired();
+
+            entity.Property(ce => ce.CreatedAt)
+                  .IsRequired();
+
+            // Foreign key relationship
+            entity.HasOne(ce => ce.Course)
+                  .WithMany()
+                  .HasForeignKey(ce => ce.CourseId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // Index để query nhanh hơn
+            entity.HasIndex(ce => new { ce.CourseId, ce.Order });
+            entity.HasIndex(ce => new { ce.CourseId, ce.Skill, ce.ExerciseId });
         });
 
         // ListeningExercise config by Fluent API
@@ -304,6 +343,19 @@ public class IeltsDbContext : DbContext
             // Index để query nhanh hơn
             entity.HasIndex(q => new { q.Skill, q.ExerciseId });
             entity.HasIndex(q => new { q.ExerciseId, q.QuestionNumber });
+        });
+
+        // RefreshToken config by Fluent API
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.ToTable("RefreshTokens");
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.TokenHash).IsRequired().HasMaxLength(200);
+            entity.Property(r => r.ExpiresAt).IsRequired();
+            entity.Property(r => r.CreatedAt).IsRequired();
+            entity.Property(r => r.RevokedAt);
+            entity.Property(r => r.ReplacedByTokenHash).HasMaxLength(200);
+            entity.HasIndex(r => new { r.UserId, r.TokenHash }).IsUnique();
         });
 
     }

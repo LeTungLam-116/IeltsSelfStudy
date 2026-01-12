@@ -1,7 +1,9 @@
 ﻿using IeltsSelfStudy.Application.DTOs.ReadingExercises;
+using IeltsSelfStudy.Application.DTOs.Common;
 using IeltsSelfStudy.Application.Interfaces;
 using IeltsSelfStudy.Domain.Entities;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace IeltsSelfStudy.Application.Services;
 
@@ -10,31 +12,65 @@ public class ReadingExerciseService : IReadingExerciseService
     private readonly IGenericRepository<ReadingExercise> _readingRepo;
     private readonly IGenericRepository<Attempt> _attemptRepo;
     private readonly IGenericRepository<Question> _questionRepo;
+    private readonly ILogger<ReadingExerciseService> _logger;
 
     public ReadingExerciseService(
         IGenericRepository<ReadingExercise> readingRepo,
         IGenericRepository<Attempt> attemptRepo,
-        IGenericRepository<Question> questionRepo)
+        IGenericRepository<Question> questionRepo,
+        ILogger<ReadingExerciseService> logger)
     {
         _readingRepo = readingRepo;
         _attemptRepo = attemptRepo;
         _questionRepo = questionRepo;
+        _logger = logger;
     }
 
     public async Task<List<ReadingExerciseDto>> GetAllAsync()
     {
+        _logger.LogInformation("Getting all reading exercises");
         var list = await _readingRepo.GetAllAsync();
-        return list.Where(x => x.IsActive).Select(MapToDto).ToList();
+        var result = list.Where(x => x.IsActive).Select(MapToDto).ToList();
+
+        _logger.LogInformation("Retrieved {Count} reading exercises", result.Count);
+        return result;
+    }
+
+    public async Task<PagedResponse<ReadingExerciseDto>> GetPagedAsync(PagedRequest request)
+    {
+        _logger.LogInformation("Getting paged reading exercises. PageNumber: {PageNumber}, PageSize: {PageSize}",
+            request.PageNumber, request.PageSize);
+
+        var (items, totalCount) = await _readingRepo.GetPagedAsync(
+            request,
+            filter: q => q.Where(r => r.IsActive),
+            orderBy: q => q.OrderByDescending(r => r.CreatedAt)
+        );
+
+        var dtos = items.Select(MapToDto).ToList();
+
+        _logger.LogInformation("Retrieved {Count} reading exercises (Page {PageNumber}/{TotalPages})",
+            dtos.Count, request.PageNumber, (int)Math.Ceiling(totalCount / (double)request.PageSize));
+
+        return new PagedResponse<ReadingExerciseDto>(dtos, totalCount, request);
     }
 
     public async Task<ReadingExerciseDto?> GetByIdAsync(int id)
     {
-        var entity = await _readingRepo.GetByIdAsync(id);
-        return entity is null ? null : MapToDto(entity);
+        _logger.LogDebug("Getting reading exercise by ID: {ExerciseId}", id);
+        
+        var item = await _readingRepo.GetByIdAsync(id);
+        if (item is null)
+        {
+            _logger.LogWarning("Reading exercise not found: {ExerciseId}", id);
+            return null;
+        }
+        return MapToDto(item);
     }
 
     public async Task<ReadingExerciseDto> CreateAsync(CreateReadingExerciseRequest request)
     {
+        _logger.LogInformation("Creating new reading exercise: {Title}", request.Title);
         var entity = new ReadingExercise
         {
             Title = request.Title,
@@ -49,13 +85,20 @@ public class ReadingExerciseService : IReadingExerciseService
         await _readingRepo.AddAsync(entity);
         await _readingRepo.SaveChangesAsync();
 
+        _logger.LogInformation("Reading exercise created successfully: {ExerciseId}, Title: {Title}", entity.Id, entity.Title);
         return MapToDto(entity);
     }
 
     public async Task<ReadingExerciseDto?> UpdateAsync(int id, UpdateReadingExerciseRequest request)
     {
+        _logger.LogInformation("Updating reading exercise: {ExerciseId}", id);
+        
         var entity = await _readingRepo.GetByIdAsync(id);
-        if (entity is null) return null;
+        if (entity is null)
+        {
+            _logger.LogWarning("Reading exercise not found for update: {ExerciseId}", id);
+            return null;
+        }
 
         entity.Title = request.Title;
         entity.Description = request.Description;
@@ -67,13 +110,20 @@ public class ReadingExerciseService : IReadingExerciseService
         _readingRepo.Update(entity);
         await _readingRepo.SaveChangesAsync();
 
+        _logger.LogInformation("Reading exercise updated successfully: {ExerciseId}", id);
         return MapToDto(entity);
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
+        _logger.LogInformation("Deleting reading exercise: {ExerciseId}", id);
+        
         var entity = await _readingRepo.GetByIdAsync(id);
-        if (entity is null) return false;
+        if (entity is null)
+        {
+            _logger.LogWarning("Reading exercise not found for deletion: {ExerciseId}", id);
+            return false;
+        }
 
         // Soft delete
         entity.IsActive = false;
@@ -81,15 +131,20 @@ public class ReadingExerciseService : IReadingExerciseService
         _readingRepo.Update(entity);
         await _readingRepo.SaveChangesAsync();
 
+        _logger.LogInformation("Reading exercise deleted successfully: {ExerciseId}", id);
         return true;
     }
 
     public async Task<EvaluateReadingResponse> EvaluateAsync(int readingExerciseId, EvaluateReadingRequest request)
     {
+        _logger.LogInformation("Evaluating reading exercise: {ReadingExerciseId}", readingExerciseId);
         // 1. Lấy exercise (DbContext tự đóng sau khi xong)
         var exercise = await _readingRepo.GetByIdAsync(readingExerciseId);
         if (exercise is null)
+        {
+            _logger.LogError("Reading exercise not found for evaluation: {ReadingExerciseId}", readingExerciseId);
             throw new InvalidOperationException("Reading exercise not found.");
+        }
 
         // 2. Lấy tất cả questions cho exercise này
         var allQuestions = await _questionRepo.GetAllAsync();
@@ -99,7 +154,10 @@ public class ReadingExerciseService : IReadingExerciseService
             .ToList();
 
         if (questions.Count == 0)
+        {
+            _logger.LogError("No questions found for this exercise: {ReadingExerciseId}", readingExerciseId);
             throw new InvalidOperationException("No questions found for this exercise.");
+        }
 
         // 3. Chấm điểm (DbContext đã đóng)
         var questionResults = new Dictionary<int, bool>();
@@ -123,12 +181,18 @@ public class ReadingExerciseService : IReadingExerciseService
             totalPoints += question.Points;
         }
 
+        _logger.LogInformation("Reading exercise evaluation completed. ReadingExerciseId: {ReadingExerciseId}, CorrectCount: {CorrectCount}, TotalQuestions: {TotalQuestions}", 
+            readingExerciseId, correctCount, questions.Count);
+
         // Tính điểm theo thang 9.0 (IELTS)
         var maxScore = 9.0;
         var score = totalPoints > 0 ? (earnedPoints / totalPoints) * maxScore : 0;
 
         // 4. Lưu attempt (DbContext mới, nhanh)
-        return await SaveAttemptAsync(readingExerciseId, request, exercise, questions, score, maxScore, correctCount, questionResults);
+        var result = await SaveAttemptAsync(readingExerciseId, request, exercise, questions, score, maxScore, correctCount, questionResults);
+        _logger.LogInformation("Reading exercise evaluation saved. ReadingExerciseId: {ReadingExerciseId}, AttemptId: {AttemptId}, Score: {Score}", 
+            readingExerciseId, result.AttemptId, result.Score);
+        return result;
     }
     private async Task<EvaluateReadingResponse> SaveAttemptAsync(
         int readingExerciseId,
@@ -170,6 +234,8 @@ public class ReadingExerciseService : IReadingExerciseService
         await _attemptRepo.AddAsync(attempt);
         await _attemptRepo.SaveChangesAsync();
 
+        _logger.LogInformation("Reading exercise evaluation saved. ReadingExerciseId: {ReadingExerciseId}, AttemptId: {AttemptId}, Score: {Score}", 
+            readingExerciseId, attempt.Id, score);
         return new EvaluateReadingResponse
         {
             AttemptId = attempt.Id,

@@ -4,6 +4,7 @@ using IeltsSelfStudy.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IeltsSelfStudy.Infrastructure.Migrations
 {
     [DbContext(typeof(IeltsDbContext))]
-    partial class IeltsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260107171608_AddRefreshTokens")]
+    partial class AddRefreshTokens
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -106,43 +109,6 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Courses", (string)null);
-                });
-
-            modelBuilder.Entity("IeltsSelfStudy.Domain.Entities.CourseExercise", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CourseId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ExerciseId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("LessonNumber")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Skill")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CourseId", "Order");
-
-                    b.HasIndex("CourseId", "Skill", "ExerciseId");
-
-                    b.ToTable("CourseExercises", (string)null);
                 });
 
             modelBuilder.Entity("IeltsSelfStudy.Domain.Entities.ListeningExercise", b =>
@@ -473,17 +439,6 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("WritingExercises", (string)null);
-                });
-
-            modelBuilder.Entity("IeltsSelfStudy.Domain.Entities.CourseExercise", b =>
-                {
-                    b.HasOne("IeltsSelfStudy.Domain.Entities.Course", "Course")
-                        .WithMany()
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Course");
                 });
 #pragma warning restore 612, 618
         }

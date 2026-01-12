@@ -19,4 +19,7 @@ public class CourseDto
     public bool IsActive { get; set; }
 
     public DateTime CreatedAt { get; set; }
+
+    // Thêm danh sách exercises (optional)
+    public List<CourseExerciseDto>? Exercises { get; set; }
 }

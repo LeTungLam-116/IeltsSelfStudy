@@ -1,5 +1,7 @@
 using IeltsSelfStudy.Application.DTOs.Questions;
+using IeltsSelfStudy.Application.DTOs.Common;
 using IeltsSelfStudy.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IeltsSelfStudy.Api.Controllers;
@@ -17,10 +19,17 @@ public class QuestionsController : ControllerBase
 
     // GET /api/questions
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] PagedRequest? request)
     {
-        var list = await _questionService.GetAllAsync();
-        return Ok(list);
+        // Nếu không có pagination params, trả về tất cả (backward compatible)
+        if (request == null || (request.PageNumber == 1 && request.PageSize == 10))
+        {
+            var list = await _questionService.GetAllAsync();
+            return Ok(list);
+        }
+
+        var pagedResult = await _questionService.GetPagedAsync(request);
+        return Ok(pagedResult);
     }
 
     // GET /api/questions/exercise?skill=Listening&exerciseId=1
@@ -41,6 +50,7 @@ public class QuestionsController : ControllerBase
 
     // POST /api/questions
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateQuestionRequest request)
     {
         var created = await _questionService.CreateAsync(request);
@@ -49,6 +59,7 @@ public class QuestionsController : ControllerBase
 
     // PUT /api/questions/5
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateQuestionRequest request)
     {
         var updated = await _questionService.UpdateAsync(id, request);
@@ -57,6 +68,7 @@ public class QuestionsController : ControllerBase
 
     // DELETE /api/questions/5
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var success = await _questionService.DeleteAsync(id);
