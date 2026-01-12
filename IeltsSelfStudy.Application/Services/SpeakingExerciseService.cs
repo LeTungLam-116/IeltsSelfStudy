@@ -1,10 +1,12 @@
 ﻿using IeltsSelfStudy.Application.Common;
 using IeltsSelfStudy.Application.DTOs.SpeakingExercises;
+using IeltsSelfStudy.Application.DTOs.Common;
 using IeltsSelfStudy.Application.Interfaces;
 using IeltsSelfStudy.Domain.Entities;
 using IeltsSelfStudy.Application.Abstractions;
 using System.Text.Json;
 using IeltsSelfStudy.Application.DTOs.AI;
+using Microsoft.Extensions.Logging;
 
 namespace IeltsSelfStudy.Application.Services;
 
@@ -13,32 +15,65 @@ public class SpeakingExerciseService : ISpeakingExerciseService
     private readonly IGenericRepository<SpeakingExercise> _speakingRepo;
     private readonly IGenericRepository<Attempt> _attemptRepo;
     private readonly IOpenAiGradingService _aiGradingService;
+    private readonly ILogger<SpeakingExerciseService> _logger;
 
     public SpeakingExerciseService(
         IGenericRepository<SpeakingExercise> speakingRepo,
         IGenericRepository<Attempt> attemptRepo,
-        IOpenAiGradingService aiGradingService)
+        IOpenAiGradingService aiGradingService,
+        ILogger<SpeakingExerciseService> logger)
     {
         _speakingRepo = speakingRepo;
         _attemptRepo = attemptRepo;
         _aiGradingService = aiGradingService;
+        _logger = logger;
     }
 
     public async Task<List<SpeakingExerciseDto>> GetAllAsync()
     {
+        _logger.LogInformation("Getting all speaking exercises");
         var list = await _speakingRepo.GetAllAsync();
-        return list.Where(x => x.IsActive).Select(MapToDto).ToList();
+        var result = list.Where(x => x.IsActive).Select(MapToDto).ToList();
+
+        _logger.LogInformation("Retrieved {Count} speaking exercises", result.Count);
+        return result;
+    }
+
+    public async Task<PagedResponse<SpeakingExerciseDto>> GetPagedAsync(PagedRequest request)
+    {
+        _logger.LogInformation("Getting paged speaking exercises. PageNumber: {PageNumber}, PageSize: {PageSize}",
+            request.PageNumber, request.PageSize);
+
+        var (items, totalCount) = await _speakingRepo.GetPagedAsync(
+            request,
+            filter: q => q.Where(s => s.IsActive),
+            orderBy: q => q.OrderByDescending(s => s.CreatedAt)
+        );
+
+        var dtos = items.Select(MapToDto).ToList();
+
+        _logger.LogInformation("Retrieved {Count} speaking exercises (Page {PageNumber}/{TotalPages})",
+            dtos.Count, request.PageNumber, (int)Math.Ceiling(totalCount / (double)request.PageSize));
+
+        return new PagedResponse<SpeakingExerciseDto>(dtos, totalCount, request);
     }
 
     public async Task<SpeakingExerciseDto?> GetByIdAsync(int id)
     {
-        var e = await _speakingRepo.GetByIdAsync(id);
-        return e is null ? null : MapToDto(e);
+        _logger.LogDebug("Getting speaking exercise by ID: {ExerciseId}", id);
+        var item = await _speakingRepo.GetByIdAsync(id);
+        if (item is null)
+        {
+            _logger.LogWarning("Speaking exercise not found: {ExerciseId}", id);
+            return null;
+        }
+        return MapToDto(item);
     }
 
     public async Task<SpeakingExerciseDto> CreateAsync(CreateSpeakingExerciseRequest request)
     {
-        var e = new SpeakingExercise
+        _logger.LogInformation("Creating new speaking exercise: {Title}", request.Title);
+        var entity = new SpeakingExercise
         {
             Title = request.Title,
             Description = request.Description,
@@ -51,50 +86,70 @@ public class SpeakingExerciseService : ISpeakingExerciseService
             CreatedAt = DateTime.UtcNow
         };
 
-        await _speakingRepo.AddAsync(e);
+        await _speakingRepo.AddAsync(entity);
         await _speakingRepo.SaveChangesAsync();
 
-        return MapToDto(e);
+        _logger.LogInformation("Speaking exercise created successfully: {ExerciseId}, Title: {Title}", entity.Id, entity.Title);
+        return MapToDto(entity);
     }
 
     public async Task<SpeakingExerciseDto?> UpdateAsync(int id, UpdateSpeakingExerciseRequest request)
     {
-        var e = await _speakingRepo.GetByIdAsync(id);
-        if (e is null) return null;
+        _logger.LogInformation("Updating speaking exercise: {ExerciseId}", id);
+        
+        var entity = await _speakingRepo.GetByIdAsync(id);
+        if (entity is null)
+        {
+            _logger.LogWarning("Speaking exercise not found for update: {ExerciseId}", id);
+            return null;
+        }
 
-        e.Title = request.Title;
-        e.Description = request.Description;
-        e.Part = request.Part;
-        e.Question = request.Question;
-        e.Topic = request.Topic;
-        e.Level = request.Level;
-        e.Tips = request.Tips;
-        e.IsActive = request.IsActive;
+        entity.Title = request.Title;
+        entity.Description = request.Description;
+        entity.Part = request.Part;
+        entity.Question = request.Question;
+        entity.Topic = request.Topic;
+        entity.Level = request.Level;
+        entity.Tips = request.Tips;
+        entity.IsActive = request.IsActive;
 
-        _speakingRepo.Update(e);
+        _speakingRepo.Update(entity);
         await _speakingRepo.SaveChangesAsync();
 
-        return MapToDto(e);
+        _logger.LogInformation("Speaking exercise updated successfully: {ExerciseId}", id);
+        return MapToDto(entity);
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var e = await _speakingRepo.GetByIdAsync(id);
-        if (e is null) return false;
+        _logger.LogInformation("Deleting speaking exercise: {ExerciseId}", id);
+        
+        var entity = await _speakingRepo.GetByIdAsync(id);
+        if (entity is null)
+        {
+            _logger.LogWarning("Speaking exercise not found for deletion: {ExerciseId}", id);
+            return false;
+        }
 
-        e.IsActive = false;
-        _speakingRepo.Update(e);
+        entity.IsActive = false;
+        _speakingRepo.Update(entity);
         await _speakingRepo.SaveChangesAsync();
 
+        _logger.LogInformation("Speaking exercise deleted successfully: {ExerciseId}", id);
         return true;
     }
 
     public async Task<EvaluateSpeakingResponse> EvaluateAsync(int speakingExerciseId, EvaluateSpeakingRequest request)
     {
+        _logger.LogInformation("Evaluating speaking exercise. ExerciseId: {ExerciseId}, UserId: {UserId}", 
+            speakingExerciseId, request.UserId);
         // 1. Lấy exercise (DbContext tự đóng sau khi xong)
         var exercise = await _speakingRepo.GetByIdAsync(speakingExerciseId);
         if (exercise is null)
+        {
+            _logger.LogError("Speaking exercise not found for evaluation: {ExerciseId}", speakingExerciseId);
             throw new InvalidOperationException("Speaking exercise not found.");
+        }
 
         // 2. Copy dữ liệu cần thiết (không cần entity nữa)
         var exerciseData = new
@@ -111,10 +166,14 @@ public class SpeakingExerciseService : ISpeakingExerciseService
         SpeakingFeedbackDto aiFeedback;
         try
         {
+            _logger.LogInformation("Calling AI grading service for speaking exercise: {ExerciseId}", speakingExerciseId);
             aiFeedback = await _aiGradingService.GradeSpeakingAsync(prompt);
+            _logger.LogInformation("AI grading completed successfully for exercise: {ExerciseId}, OverallBand: {Band}", 
+                speakingExerciseId, aiFeedback.OverallBand);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to grade speaking with AI. ExerciseId: {ExerciseId}", speakingExerciseId);
             throw new InvalidOperationException($"Failed to grade speaking with AI: {ex.Message}", ex);
         }
 
@@ -164,6 +223,9 @@ public class SpeakingExerciseService : ISpeakingExerciseService
         await _attemptRepo.AddAsync(attempt);
         await _attemptRepo.SaveChangesAsync();
 
+        _logger.LogInformation("Speaking evaluation completed. ExerciseId: {ExerciseId}, UserId: {UserId}, AttemptId: {AttemptId}, Score: {Score}", 
+            speakingExerciseId, request.UserId, attempt.Id, attempt.Score);
+            
         return new EvaluateSpeakingResponse
         {
             AttemptId = attempt.Id,

@@ -4,6 +4,7 @@ using IeltsSelfStudy.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IeltsSelfStudy.Infrastructure.Migrations
 {
     [DbContext(typeof(IeltsDbContext))]
-    partial class IeltsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260108155438_AddCourseExercises")]
+    partial class AddCourseExercises
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
