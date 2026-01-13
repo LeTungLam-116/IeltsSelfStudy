@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 
 interface MenuItem {
-  path: string;
+  path?: string;
   label: string;
   icon?: string;
   children?: MenuItem[];
@@ -13,13 +13,12 @@ const menuItems: MenuItem[] = [
 
   // Content Management Section
   {
-    path: '/admin/content',
     label: 'Content Management',
     icon: '📝',
     children: [
       { path: '/admin/content', label: 'Content Manager', icon: '📝' },
-      { path: '/admin/exercises', label: 'Exercises', icon: '✏️' },
       { path: '/admin/courses', label: 'Courses', icon: '📚' },
+      { path: '/admin/exercises', label: 'Exercises', icon: '✏️' },
     ]
   },
 
@@ -62,12 +61,15 @@ function MenuItemComponent({ item, level = 0 }: MenuItemComponentProps) {
         {/* Child Items */}
         <div className="space-y-1">
           {item.children.map((child, index) => (
-            <MenuItemComponent key={`${child.path}-${index}`} item={child} level={level + 1} />
+            <MenuItemComponent key={`${child.path || child.label}-${index}`} item={child} level={level + 1} />
           ))}
         </div>
       </div>
     );
   }
+
+  // Only render NavLink if path exists
+  if (!item.path) return null;
 
   // Regular menu item
   return (
@@ -121,7 +123,7 @@ export default function AdminSidebar() {
       <nav className="flex-1 px-4 py-6 overflow-y-auto">
         <div className="space-y-1">
           {menuItems.map((item, index) => (
-            <MenuItemComponent key={`${item.path}-${index}`} item={item} />
+            <MenuItemComponent key={`${item.path || item.label}-${index}`} item={item} />
           ))}
         </div>
       </nav>

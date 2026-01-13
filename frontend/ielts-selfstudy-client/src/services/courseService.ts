@@ -1,5 +1,5 @@
 import httpClient from '../api/httpClient';
-import type { Course, CourseFormData, CourseExercise, AddExerciseToCourseData } from '../types/course';
+import type { Course, CourseFormData, CourseExercise } from '../types/course';
 
 const STORAGE_KEY = 'mockCourses_v1';
 
@@ -11,10 +11,8 @@ function seedIfEmpty() {
     const seed: Course[] = [
       {
         id: 1,
-        name: 'General Writing Course',
         title: 'General Writing Course',
         description: 'Improve your general writing skills',
-        shortDescription: 'Improve your general writing skills',
         skill: 'Writing',
         level: 'Intermediate',
         targetBand: 6.0,
@@ -23,10 +21,8 @@ function seedIfEmpty() {
       },
       {
         id: 2,
-        name: 'Academic Reading',
         title: 'Academic Reading',
         description: 'Practice academic reading passages',
-        shortDescription: 'Practice academic reading passages',
         skill: 'Reading',
         level: 'Advanced',
         targetBand: 7.0,
@@ -35,10 +31,8 @@ function seedIfEmpty() {
       },
       {
         id: 3,
-        name: 'Listening Foundations',
         title: 'Listening Foundations',
         description: 'Basic listening practice',
-        shortDescription: 'Basic listening practice',
         skill: 'Listening',
         level: 'Beginner',
         targetBand: 5.0,
@@ -66,10 +60,8 @@ async function createCourseFallback(payload: CourseFormData): Promise<Course> {
   const id = list.length ? Math.max(...list.map((c) => c.id)) + 1 : 1;
   const newCourse: Course = {
     id,
-    name: payload.name,
     title: payload.name,
     description: payload.shortDescription || null,
-    shortDescription: payload.shortDescription || null,
     skill: payload.skill,
     level: payload.level,
     targetBand: payload.targetBand ?? null,
@@ -88,10 +80,8 @@ async function updateCourseFallback(id: number, payload: CourseFormData): Promis
   if (idx === -1) return undefined;
   const updated: Course = {
     ...list[idx],
-    name: payload.name,
     title: payload.name,
     description: payload.shortDescription || null,
-    shortDescription: payload.shortDescription || null,
     skill: payload.skill,
     level: payload.level,
     targetBand: payload.targetBand ?? null,
@@ -145,8 +135,8 @@ export async function createCourse(payload: CourseFormData): Promise<Course> {
     const course = res.data;
     return {
       ...course,
-      title: course.name || course.title,
-      description: course.shortDescription || course.description,
+      title: course.name || course.title || payload.name,
+      description: course.shortDescription || course.description || payload.shortDescription,
     };
   } catch (error) {
     console.warn('Backend not available for createCourse, falling back to mock data:', error);
@@ -160,8 +150,8 @@ export async function updateCourse(id: number, payload: CourseFormData): Promise
     const course = res.data;
     return {
       ...course,
-      title: course.name || course.title,
-      description: course.shortDescription || course.description,
+      title: course.name || course.title || payload.name,
+      description: course.shortDescription || course.description || payload.shortDescription,
     };
   } catch (error) {
     console.warn(`Backend not available for updateCourse(${id}), falling back to mock data:`, error);

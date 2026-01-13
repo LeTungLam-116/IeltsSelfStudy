@@ -8,7 +8,6 @@ interface CourseFormProps {
 }
 
 const SKILL_OPTIONS = [
-  { value: 'All', label: 'All Skills' },
   { value: 'Writing', label: 'Writing' },
   { value: 'Speaking', label: 'Speaking' },
   { value: 'Listening', label: 'Listening' },
@@ -26,7 +25,7 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
     name: '',
     shortDescription: '',
     level: 'Beginner',
-    skill: 'All',
+    skill: 'Writing',
     targetBand: '',
     price: '',
     isActive: true,
