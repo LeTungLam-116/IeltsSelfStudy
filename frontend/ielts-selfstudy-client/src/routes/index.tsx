@@ -30,6 +30,7 @@ import ProfilePage from "../pages/profile/ProfilePage";
 import PracticePage from "../pages/practice/PracticePage";
 import HistoryPage from "../pages/history/HistoryPage";
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
+import ContentManagerPage from "../pages/admin/ContentManagerPage";
 import ExercisesManagementPage from "../pages/admin/ExercisesManagementPage";
 import ExerciseDetailPage from "../pages/admin/ExerciseDetailPage";
 import CoursesManagementPage from "../pages/admin/CoursesManagementPage";
@@ -92,6 +93,7 @@ export function AppRoutes() {
         }>
           <Route path="" element={<AdminDashboardPage />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="content" element={<ContentManagerPage />} />
 
           {/* Content Management */}
           <Route path="exercises/*" element={<ExercisesManagementPage />} />

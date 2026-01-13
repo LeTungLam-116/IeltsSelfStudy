@@ -8,6 +8,7 @@ const getPageTitle = (pathname: string): string => {
     '/admin/dashboard': 'Dashboard',
 
     // Content Management
+    '/admin/content': 'Content Manager',
     '/admin/courses': 'Courses Management',
     '/admin/exercises': 'Exercises Management',
     '/admin/exercises/writing': 'Writing Exercises',

@@ -17,6 +17,7 @@ const menuItems: MenuItem[] = [
     label: 'Content Management',
     icon: '📝',
     children: [
+      { path: '/admin/content', label: 'Content Manager', icon: '📝' },
       { path: '/admin/exercises', label: 'Exercises', icon: '✏️' },
       { path: '/admin/courses', label: 'Courses', icon: '📚' },
     ]
