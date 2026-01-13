@@ -14,6 +14,29 @@ export interface WritingExerciseDto {
   createdAt: string;
 }
 
+export interface CreateWritingExerciseRequest {
+  title: string;
+  description?: string | null;
+  taskType: string;
+  question: string;
+  topic?: string | null;
+  level: string;
+  minWordCount: number;
+  sampleAnswer?: string | null;
+}
+
+export interface UpdateWritingExerciseRequest {
+  title: string;
+  description?: string | null;
+  taskType: string;
+  question: string;
+  topic?: string | null;
+  level: string;
+  minWordCount: number;
+  sampleAnswer?: string | null;
+  isActive: boolean;
+}
+
 export async function getWritingExercises(): Promise<WritingExerciseDto[]> {
   const res = await httpClient.get<WritingExerciseDto[]>("/writingexercises");
   return res.data;
@@ -49,4 +72,18 @@ export async function evaluateWriting(
     payload
   );
   return res.data;
+}
+
+export async function createWritingExercise(request: CreateWritingExerciseRequest): Promise<WritingExerciseDto> {
+  const res = await httpClient.post<WritingExerciseDto>("/writingexercises", request);
+  return res.data;
+}
+
+export async function updateWritingExercise(id: number, request: UpdateWritingExerciseRequest): Promise<WritingExerciseDto> {
+  const res = await httpClient.put<WritingExerciseDto>(`/writingexercises/${id}`, request);
+  return res.data;
+}
+
+export async function deleteWritingExercise(id: number): Promise<void> {
+  await httpClient.delete(`/writingexercises/${id}`);
 }
