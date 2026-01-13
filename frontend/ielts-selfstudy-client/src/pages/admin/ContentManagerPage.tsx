@@ -1,24 +1,110 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import CourseTable from '../../components/admin/CourseTable';
+import CourseForm from '../../components/admin/CourseForm';
+import { getAllCourses, createCourse, updateCourse, deleteCourse } from '../../services/courseService';
+import type { Course, CourseFormData } from '../../types/course';
 
 type TabType = 'courses' | 'exercises' | 'questions';
 
 export default function ContentManagerPage() {
   const [activeTab, setActiveTab] = useState<TabType>('courses');
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(false);
+  const [showCourseForm, setShowCourseForm] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const navigate = useNavigate();
 
   const tabs = [
-    { id: 'courses' as TabType, label: 'Courses', count: 0 },
+    { id: 'courses' as TabType, label: 'Courses', count: courses.length },
     { id: 'exercises' as TabType, label: 'Exercises', count: 0 },
     { id: 'questions' as TabType, label: 'Questions', count: 0 },
   ];
+
+  useEffect(() => {
+    if (activeTab === 'courses') {
+      loadCourses();
+    }
+  }, [activeTab]);
+
+  const loadCourses = async () => {
+    setCoursesLoading(true);
+    try {
+      const data = await getAllCourses();
+      setCourses(data);
+    } catch (error) {
+      console.error('Failed to load courses:', error);
+    } finally {
+      setCoursesLoading(false);
+    }
+  };
+
+  const handleCreateCourse = () => {
+    setEditingCourse(null);
+    setShowCourseForm(true);
+  };
+
+  const handleEditCourse = (course: Course) => {
+    setEditingCourse(course);
+    setShowCourseForm(true);
+  };
+
+  const handleViewCourse = (course: Course) => {
+    navigate(`/admin/courses/${course.id}`);
+  };
+
+  const handleCourseSubmit = async (data: any) => {
+    try {
+      if (editingCourse) {
+        await updateCourse(editingCourse.id, data);
+      } else {
+        await createCourse(data);
+      }
+      setShowCourseForm(false);
+      setEditingCourse(null);
+      await loadCourses(); // Reload courses
+    } catch (error) {
+      console.error('Failed to save course:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteCourse = async (courseId: number) => {
+    try {
+      await deleteCourse(courseId);
+      await loadCourses(); // Reload courses
+    } catch (error) {
+      console.error('Failed to delete course:', error);
+      throw error;
+    }
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'courses':
         return (
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-4xl mb-4">📚</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Courses Management</h3>
-            <p className="text-gray-500">Manage IELTS courses and their content</p>
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Courses Management</h2>
+                <p className="text-gray-600">Manage IELTS courses and their content</p>
+              </div>
+              <button
+                onClick={handleCreateCourse}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              >
+                <span>+</span>
+                <span>Add Course</span>
+              </button>
+            </div>
+
+            <CourseTable
+              courses={courses}
+              onEdit={handleEditCourse}
+              onDelete={handleDeleteCourse}
+              onView={handleViewCourse}
+              loading={coursesLoading}
+            />
           </div>
         );
       case 'exercises':
@@ -105,6 +191,18 @@ export default function ContentManagerPage() {
           {renderTabContent()}
         </div>
       </div>
+
+      {/* Course Form Modal */}
+      {showCourseForm && (
+        <CourseForm
+          course={editingCourse}
+          onSubmit={handleCourseSubmit}
+          onCancel={() => {
+            setShowCourseForm(false);
+            setEditingCourse(null);
+          }}
+        />
+      )}
     </div>
   );
 }
