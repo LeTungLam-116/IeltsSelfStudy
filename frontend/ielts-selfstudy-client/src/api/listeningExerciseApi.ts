@@ -13,6 +13,27 @@ export interface ListeningExerciseDto {
   createdAt: string;
 }
 
+export interface CreateListeningExerciseRequest {
+  title: string;
+  description?: string | null;
+  audioUrl: string;
+  transcript?: string | null;
+  level: string;
+  questionCount: number;
+  durationSeconds?: number | null;
+}
+
+export interface UpdateListeningExerciseRequest {
+  title: string;
+  description?: string | null;
+  audioUrl: string;
+  transcript?: string | null;
+  level: string;
+  questionCount: number;
+  durationSeconds?: number | null;
+  isActive: boolean;
+}
+
 export async function getListeningExercises(): Promise<ListeningExerciseDto[]> {
   const res = await httpClient.get<ListeningExerciseDto[]>("/listeningexercises");
   return res.data;
@@ -25,4 +46,18 @@ export async function getListeningExerciseById(
     `/listeningexercises/${id}`
   );
   return res.data;
+}
+
+export async function createListeningExercise(request: CreateListeningExerciseRequest): Promise<ListeningExerciseDto> {
+  const res = await httpClient.post<ListeningExerciseDto>("/listeningexercises", request);
+  return res.data;
+}
+
+export async function updateListeningExercise(id: number, request: UpdateListeningExerciseRequest): Promise<ListeningExerciseDto> {
+  const res = await httpClient.put<ListeningExerciseDto>(`/listeningexercises/${id}`, request);
+  return res.data;
+}
+
+export async function deleteListeningExercise(id: number): Promise<void> {
+  await httpClient.delete(`/listeningexercises/${id}`);
 }
