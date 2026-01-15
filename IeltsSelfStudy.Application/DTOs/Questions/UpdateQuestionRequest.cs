@@ -4,9 +4,6 @@ namespace IeltsSelfStudy.Application.DTOs.Questions;
 
 public class UpdateQuestionRequest
 {
-    [Required, MaxLength(50)]
-    public string Skill { get; set; } = string.Empty;
-
     [Required]
     public int ExerciseId { get; set; }
 

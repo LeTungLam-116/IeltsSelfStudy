@@ -1,14 +1,15 @@
+using IeltsSelfStudy.Api;
+using IeltsSelfStudy.Api.Configuration;
+using IeltsSelfStudy.Api.Extensions;
 using IeltsSelfStudy.Application;
 using IeltsSelfStudy.Application.Abstractions;
 using IeltsSelfStudy.Infrastructure;
 using IeltsSelfStudy.Infrastructure.AI;
-using IeltsSelfStudy.Api.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using IeltsSelfStudy.Api.Configuration;
 using Microsoft.OpenApi.Models;
-using System.Text;
 using Serilog;
+using System.Text;
 
 // ===== CẤU HÌNH SERILOG TRƯỚC KHI BUILD =====
 Log.Logger = new LoggerConfiguration()
@@ -43,6 +44,7 @@ try
         .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(opt =>
         {
+            opt.MapInboundClaims = false;
             opt.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,

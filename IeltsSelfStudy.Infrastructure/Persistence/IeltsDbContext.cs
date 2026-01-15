@@ -1,4 +1,4 @@
-﻿using IeltsSelfStudy.Domain.Entities;
+using IeltsSelfStudy.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace IeltsSelfStudy.Infrastructure.Persistence;
@@ -12,11 +12,8 @@ public class IeltsDbContext : DbContext
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Course> Courses => Set<Course>();
-    public DbSet<ListeningExercise> ListeningExercises => Set<ListeningExercise>();
-    public DbSet<ReadingExercise> ReadingExercises => Set<ReadingExercise>();
+    public DbSet<Exercise> Exercises => Set<Exercise>(); // TPH: Single table for all exercises
     public DbSet<Attempt> Attempts => Set<Attempt>();
-    public DbSet<WritingExercise> WritingExercises => Set<WritingExercise>();
-    public DbSet<SpeakingExercise> SpeakingExercises => Set<SpeakingExercise>();
     public DbSet<Question> Questions => Set<Question>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<CourseExercise> CourseExercises => Set<CourseExercise>();
@@ -79,6 +76,39 @@ public class IeltsDbContext : DbContext
                   .IsRequired();
         });
 
+        // Configure Exercise properties with Fluent API
+        modelBuilder.Entity<Exercise>(entity =>
+        {
+            entity.ToTable("Exercises");
+
+            entity.Property(e => e.Type)
+                  .HasMaxLength(20)
+                  .IsRequired();
+
+            entity.Property(e => e.Title)
+                  .IsRequired()
+                  .HasMaxLength(255);
+
+            entity.Property(e => e.Description)
+                  .HasMaxLength(500);
+
+            entity.Property(e => e.Level)
+                  .IsRequired()
+                  .HasMaxLength(50);
+
+            entity.Property(e => e.AudioUrl)
+                  .HasMaxLength(500);
+
+            entity.Property(e => e.TaskType)
+                  .HasMaxLength(20);
+
+            entity.Property(e => e.Topic)
+                  .HasMaxLength(100);
+
+            entity.Property(e => e.Part)
+                  .HasMaxLength(10);
+        });
+
         // CourseExercise config by Fluent API
         modelBuilder.Entity<CourseExercise>(entity =>
         {
@@ -92,9 +122,6 @@ public class IeltsDbContext : DbContext
             entity.Property(ce => ce.CourseId)
                   .IsRequired();
 
-            entity.Property(ce => ce.Skill)
-                  .IsRequired()
-                  .HasMaxLength(50);
 
             entity.Property(ce => ce.ExerciseId)
                   .IsRequired();
@@ -113,79 +140,20 @@ public class IeltsDbContext : DbContext
 
             // Index để query nhanh hơn
             entity.HasIndex(ce => new { ce.CourseId, ce.Order });
-            entity.HasIndex(ce => new { ce.CourseId, ce.Skill, ce.ExerciseId });
         });
 
-        // ListeningExercise config by Fluent API
-        modelBuilder.Entity<ListeningExercise>(entity =>
-        {
-            entity.ToTable("ListeningExercises");
+        // Configure FK relationships to Exercise (TPH)
+        modelBuilder.Entity<CourseExercise>()
+            .HasOne(ce => ce.Exercise)
+            .WithMany()
+            .HasForeignKey(ce => ce.ExerciseId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasKey(e => e.Id);
-
-            entity.Property(e => e.Id)
-                  .ValueGeneratedOnAdd();
-
-            entity.Property(e => e.Title)
-                  .IsRequired()
-                  .HasMaxLength(255);
-
-            entity.Property(e => e.Description)
-                  .HasMaxLength(500);
-
-            entity.Property(e => e.AudioUrl)
-                  .IsRequired()
-                  .HasMaxLength(500);
-
-            entity.Property(e => e.Level)
-                  .IsRequired()
-                  .HasMaxLength(50);
-
-            entity.Property(e => e.QuestionCount)
-                  .IsRequired();
-
-            entity.Property(e => e.DurationSeconds);
-
-            entity.Property(e => e.IsActive)
-                  .IsRequired();
-
-            entity.Property(e => e.CreatedAt)
-                  .IsRequired();
-        });
-
-        // ReadingExercise config by Fluent API
-        modelBuilder.Entity<ReadingExercise>(entity =>
-        {
-            entity.ToTable("ReadingExercises");
-
-            entity.HasKey(e => e.Id);
-
-            entity.Property(e => e.Id)
-                  .ValueGeneratedOnAdd();
-
-            entity.Property(e => e.Title)
-                  .IsRequired()
-                  .HasMaxLength(255);
-
-            entity.Property(e => e.Description)
-                  .HasMaxLength(500);
-
-            entity.Property(e => e.PassageText)
-                  .IsRequired();
-
-            entity.Property(e => e.Level)
-                  .IsRequired()
-                  .HasMaxLength(50);
-
-            entity.Property(e => e.QuestionCount)
-                  .IsRequired();
-
-            entity.Property(e => e.IsActive)
-                  .IsRequired();
-
-            entity.Property(e => e.CreatedAt)
-                  .IsRequired();
-        });
+        modelBuilder.Entity<Question>()
+            .HasOne(q => q.Exercise)
+            .WithMany()
+            .HasForeignKey(q => q.ExerciseId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Attempt>(entity =>
         {
@@ -199,10 +167,6 @@ public class IeltsDbContext : DbContext
             entity.Property(a => a.UserId)
                   .IsRequired();
 
-            entity.Property(a => a.Skill)
-                  .IsRequired()
-                  .HasMaxLength(50);
-
             entity.Property(a => a.ExerciseId)
                   .IsRequired();
 
@@ -213,84 +177,27 @@ public class IeltsDbContext : DbContext
                   .HasColumnType("float");
 
             entity.Property(a => a.UserAnswerJson)
-                  .HasColumnType("nvarchar(max)"); // Thêm dòng này
+                  .HasColumnType("nvarchar(max)");
 
             entity.Property(a => a.AiFeedback)
-                  .HasColumnType("nvarchar(max)"); // Thêm dòng này - QUAN TRỌNG!
+                  .HasColumnType("nvarchar(max)");
 
             entity.Property(a => a.IsActive)
                   .IsRequired();
 
             entity.Property(a => a.CreatedAt)
                   .IsRequired();
-        });
 
-        // WritingExercise config by Fluent API
-        modelBuilder.Entity<WritingExercise>(entity =>
-        {
-            entity.ToTable("WritingExercises");
+            // FK relationships
+            entity.HasOne(a => a.User)
+                  .WithMany()
+                  .HasForeignKey(a => a.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasKey(e => e.Id);
-
-            entity.Property(e => e.Id)
-                  .ValueGeneratedOnAdd();
-
-            entity.Property(e => e.Title)
-                  .IsRequired()
-                  .HasMaxLength(255);
-
-            entity.Property(e => e.Description)
-                  .HasMaxLength(500);
-
-            entity.Property(e => e.TaskType)
-                  .IsRequired()
-                  .HasMaxLength(20);
-
-            entity.Property(e => e.Question)
-                  .IsRequired();
-
-            entity.Property(e => e.Topic)
-                  .HasMaxLength(100);
-
-            entity.Property(e => e.Level)
-                  .IsRequired()
-                  .HasMaxLength(50);
-
-            entity.Property(e => e.MinWordCount)
-                  .IsRequired();
-
-            entity.Property(e => e.SampleAnswer);
-
-            entity.Property(e => e.IsActive)
-                  .IsRequired();
-
-            entity.Property(e => e.CreatedAt)
-                  .IsRequired();
-        });
-
-        // SpeakingExercise config by Fluent API
-        modelBuilder.Entity<SpeakingExercise>(entity =>
-        {
-            entity.ToTable("SpeakingExercises");
-
-            entity.HasKey(e => e.Id);
-
-            entity.Property(e => e.Id).ValueGeneratedOnAdd();
-
-            entity.Property(e => e.Title).IsRequired().HasMaxLength(255);
-            entity.Property(e => e.Description).HasMaxLength(500);
-
-            entity.Property(e => e.Part).IsRequired().HasMaxLength(10);
-            entity.Property(e => e.Question).IsRequired();
-
-            entity.Property(e => e.Topic).HasMaxLength(100);
-
-            entity.Property(e => e.Level).IsRequired().HasMaxLength(50);
-
-            entity.Property(e => e.Tips);
-
-            entity.Property(e => e.IsActive).IsRequired();
-            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.HasOne(a => a.Exercise)
+                  .WithMany()
+                  .HasForeignKey(a => a.ExerciseId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Question config by Fluent API
@@ -303,9 +210,6 @@ public class IeltsDbContext : DbContext
             entity.Property(q => q.Id)
                   .ValueGeneratedOnAdd();
 
-            entity.Property(q => q.Skill)
-                  .IsRequired()
-                  .HasMaxLength(50);
 
             entity.Property(q => q.ExerciseId)
                   .IsRequired();
@@ -341,7 +245,6 @@ public class IeltsDbContext : DbContext
                   .IsRequired();
 
             // Index để query nhanh hơn
-            entity.HasIndex(q => new { q.Skill, q.ExerciseId });
             entity.HasIndex(q => new { q.ExerciseId, q.QuestionNumber });
         });
 
@@ -356,6 +259,12 @@ public class IeltsDbContext : DbContext
             entity.Property(r => r.RevokedAt);
             entity.Property(r => r.ReplacedByTokenHash).HasMaxLength(200);
             entity.HasIndex(r => new { r.UserId, r.TokenHash }).IsUnique();
+
+            // Thêm relationship configuration
+            entity.HasOne(r => r.User)
+                  .WithMany()
+                  .HasForeignKey(r => r.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
     }

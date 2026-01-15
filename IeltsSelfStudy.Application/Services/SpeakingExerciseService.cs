@@ -1,29 +1,28 @@
-﻿using IeltsSelfStudy.Application.Common;
-using IeltsSelfStudy.Application.DTOs.SpeakingExercises;
+﻿using IeltsSelfStudy.Application.DTOs.SpeakingExercises;
 using IeltsSelfStudy.Application.DTOs.Common;
+using IeltsSelfStudy.Application.DTOs.AI;
+using IeltsSelfStudy.Application.Abstractions;
 using IeltsSelfStudy.Application.Interfaces;
 using IeltsSelfStudy.Domain.Entities;
-using IeltsSelfStudy.Application.Abstractions;
 using System.Text.Json;
-using IeltsSelfStudy.Application.DTOs.AI;
 using Microsoft.Extensions.Logging;
 
 namespace IeltsSelfStudy.Application.Services;
 
 public class SpeakingExerciseService : ISpeakingExerciseService
 {
-    private readonly IGenericRepository<SpeakingExercise> _speakingRepo;
+    private readonly IGenericRepository<Exercise> _exerciseRepo; // TPH
     private readonly IGenericRepository<Attempt> _attemptRepo;
     private readonly IOpenAiGradingService _aiGradingService;
     private readonly ILogger<SpeakingExerciseService> _logger;
 
     public SpeakingExerciseService(
-        IGenericRepository<SpeakingExercise> speakingRepo,
+        IGenericRepository<Exercise> exerciseRepo, // TPH
         IGenericRepository<Attempt> attemptRepo,
         IOpenAiGradingService aiGradingService,
         ILogger<SpeakingExerciseService> logger)
     {
-        _speakingRepo = speakingRepo;
+        _exerciseRepo = exerciseRepo; // TPH: Changed from _speakingRepo
         _attemptRepo = attemptRepo;
         _aiGradingService = aiGradingService;
         _logger = logger;
@@ -32,8 +31,11 @@ public class SpeakingExerciseService : ISpeakingExerciseService
     public async Task<List<SpeakingExerciseDto>> GetAllAsync()
     {
         _logger.LogInformation("Getting all speaking exercises");
-        var list = await _speakingRepo.GetAllAsync();
-        var result = list.Where(x => x.IsActive).Select(MapToDto).ToList();
+
+        // TPH: Filter exercises by Type = "Speaking"
+        var allExercises = await _exerciseRepo.GetAllAsync();
+        var list = allExercises.Where(e => e.Type == "Speaking" && e.IsActive).ToList();
+        var result = list.Select(MapToDto).ToList();
 
         _logger.LogInformation("Retrieved {Count} speaking exercises", result.Count);
         return result;
@@ -44,10 +46,11 @@ public class SpeakingExerciseService : ISpeakingExerciseService
         _logger.LogInformation("Getting paged speaking exercises. PageNumber: {PageNumber}, PageSize: {PageSize}",
             request.PageNumber, request.PageSize);
 
-        var (items, totalCount) = await _speakingRepo.GetPagedAsync(
+        // TPH: Filter by Type = "Speaking" and IsActive
+        var (items, totalCount) = await _exerciseRepo.GetPagedAsync(
             request,
-            filter: q => q.Where(s => s.IsActive),
-            orderBy: q => q.OrderByDescending(s => s.CreatedAt)
+            filter: q => q.Where(e => e.Type == "Speaking" && e.IsActive),
+            orderBy: q => q.OrderByDescending(e => e.CreatedAt)
         );
 
         var dtos = items.Select(MapToDto).ToList();
@@ -61,8 +64,9 @@ public class SpeakingExerciseService : ISpeakingExerciseService
     public async Task<SpeakingExerciseDto?> GetByIdAsync(int id)
     {
         _logger.LogDebug("Getting speaking exercise by ID: {ExerciseId}", id);
-        var item = await _speakingRepo.GetByIdAsync(id);
-        if (item is null)
+        // TPH: Get exercise and verify it's a speaking exercise
+        var item = await _exerciseRepo.GetByIdAsync(id);
+        if (item is null || item.Type != "Speaking")
         {
             _logger.LogWarning("Speaking exercise not found: {ExerciseId}", id);
             return null;
@@ -73,11 +77,13 @@ public class SpeakingExerciseService : ISpeakingExerciseService
     public async Task<SpeakingExerciseDto> CreateAsync(CreateSpeakingExerciseRequest request)
     {
         _logger.LogInformation("Creating new speaking exercise: {Title}", request.Title);
-        var entity = new SpeakingExercise
+
+        var entity = new Exercise // TPH: Changed from SpeakingExercise to Exercise
         {
+            Type = "Speaking", // TPH: Set discriminator
             Title = request.Title,
             Description = request.Description,
-            Part = request.Part,
+            Part = request.Part, // TPH: Nullable field
             Question = request.Question,
             Topic = request.Topic,
             Level = request.Level,
@@ -86,24 +92,26 @@ public class SpeakingExerciseService : ISpeakingExerciseService
             CreatedAt = DateTime.UtcNow
         };
 
-        await _speakingRepo.AddAsync(entity);
-        await _speakingRepo.SaveChangesAsync();
+        await _exerciseRepo.AddAsync(entity);
+        await _exerciseRepo.SaveChangesAsync();
+        _logger.LogInformation("Created speaking exercise with ID: {ExerciseId}", entity.Id);
 
-        _logger.LogInformation("Speaking exercise created successfully: {ExerciseId}, Title: {Title}", entity.Id, entity.Title);
         return MapToDto(entity);
     }
 
     public async Task<SpeakingExerciseDto?> UpdateAsync(int id, UpdateSpeakingExerciseRequest request)
     {
         _logger.LogInformation("Updating speaking exercise: {ExerciseId}", id);
-        
-        var entity = await _speakingRepo.GetByIdAsync(id);
-        if (entity is null)
+
+        // TPH: Get exercise and verify it's a speaking exercise
+        var entity = await _exerciseRepo.GetByIdAsync(id);
+        if (entity is null || entity.Type != "Speaking")
         {
             _logger.LogWarning("Speaking exercise not found for update: {ExerciseId}", id);
             return null;
         }
 
+        // TPH: Update only speaking-specific fields
         entity.Title = request.Title;
         entity.Description = request.Description;
         entity.Part = request.Part;
@@ -113,8 +121,8 @@ public class SpeakingExerciseService : ISpeakingExerciseService
         entity.Tips = request.Tips;
         entity.IsActive = request.IsActive;
 
-        _speakingRepo.Update(entity);
-        await _speakingRepo.SaveChangesAsync();
+        _exerciseRepo.Update(entity); // TPH: Changed from _speakingRepo
+        await _exerciseRepo.SaveChangesAsync();
 
         _logger.LogInformation("Speaking exercise updated successfully: {ExerciseId}", id);
         return MapToDto(entity);
@@ -123,17 +131,20 @@ public class SpeakingExerciseService : ISpeakingExerciseService
     public async Task<bool> DeleteAsync(int id)
     {
         _logger.LogInformation("Deleting speaking exercise: {ExerciseId}", id);
-        
-        var entity = await _speakingRepo.GetByIdAsync(id);
-        if (entity is null)
+
+        // TPH: Get exercise and verify it's a speaking exercise
+        var entity = await _exerciseRepo.GetByIdAsync(id);
+        if (entity is null || entity.Type != "Speaking")
         {
             _logger.LogWarning("Speaking exercise not found for deletion: {ExerciseId}", id);
             return false;
         }
 
+        // Soft delete
         entity.IsActive = false;
-        _speakingRepo.Update(entity);
-        await _speakingRepo.SaveChangesAsync();
+
+        _exerciseRepo.Update(entity); // TPH: Changed from _speakingRepo
+        await _exerciseRepo.SaveChangesAsync();
 
         _logger.LogInformation("Speaking exercise deleted successfully: {ExerciseId}", id);
         return true;
@@ -141,14 +152,14 @@ public class SpeakingExerciseService : ISpeakingExerciseService
 
     public async Task<EvaluateSpeakingResponse> EvaluateAsync(int speakingExerciseId, EvaluateSpeakingRequest request)
     {
-        _logger.LogInformation("Evaluating speaking exercise. ExerciseId: {ExerciseId}, UserId: {UserId}", 
+        _logger.LogInformation("Evaluating speaking exercise. ExerciseId: {ExerciseId}, UserId: {UserId}",
             speakingExerciseId, request.UserId);
-        // 1. Lấy exercise (DbContext tự đóng sau khi xong)
-        var exercise = await _speakingRepo.GetByIdAsync(speakingExerciseId);
-        if (exercise is null)
+        // 1. Lấy exercise (TPH: Get exercise and verify it's a speaking exercise)
+        var exercise = await _exerciseRepo.GetByIdAsync(speakingExerciseId);
+        if (exercise is null || exercise.Type != "Speaking")
         {
             _logger.LogError("Speaking exercise not found for evaluation: {ExerciseId}", speakingExerciseId);
-            throw new InvalidOperationException("Speaking exercise not found.");
+            throw new InvalidOperationException("Speaking exercise not found or not a speaking exercise.");
         }
 
         // 2. Copy dữ liệu cần thiết (không cần entity nữa)
@@ -210,7 +221,7 @@ public class SpeakingExerciseService : ISpeakingExerciseService
         var attempt = new Attempt
         {
             UserId = request.UserId,
-            Skill = "Speaking",
+            // TPH: Skill được suy ra từ Exercise.Type, không cần lưu riêng
             ExerciseId = speakingExerciseId,
             Score = aiFeedback.OverallBand,
             MaxScore = 9.0,
@@ -238,7 +249,7 @@ public class SpeakingExerciseService : ISpeakingExerciseService
     /// <summary>
     /// Tạo prompt chi tiết cho AI để chấm bài Speaking
     /// </summary>
-    private static string CreatePromptForAI(SpeakingExercise exercise, EvaluateSpeakingRequest request)
+    private static string CreatePromptForAI(Exercise exercise, EvaluateSpeakingRequest request)
     {
         var prompt = $@"You are an experienced IELTS Speaking examiner. Please evaluate the following speaking answer according to IELTS Speaking {exercise.Part} criteria.
 
@@ -275,17 +286,18 @@ public class SpeakingExerciseService : ISpeakingExerciseService
         return prompt;
     }
 
-    private static SpeakingExerciseDto MapToDto(SpeakingExercise e) => new()
-    {
-        Id = e.Id,
-        Title = e.Title,
-        Description = e.Description,
-        Part = e.Part,
-        Question = e.Question,
-        Topic = e.Topic,
-        Level = e.Level,
-        Tips = e.Tips,
-        IsActive = e.IsActive,
-        CreatedAt = e.CreatedAt
-    };
+    private static SpeakingExerciseDto MapToDto(Exercise e) => // TPH: Changed from SpeakingExercise to Exercise
+        new()
+        {
+            Id = e.Id,
+            Title = e.Title,
+            Description = e.Description,
+            Part = e.Part, // TPH: Nullable field
+            Question = e.Question,
+            Topic = e.Topic,
+            Level = e.Level,
+            Tips = e.Tips,
+            IsActive = e.IsActive,
+            CreatedAt = e.CreatedAt
+        };
 }

@@ -32,11 +32,11 @@ public class QuestionsController : ControllerBase
         return Ok(pagedResult);
     }
 
-    // GET /api/questions/exercise?skill=Listening&exerciseId=1
+    // GET /api/questions/exercise?exerciseId=1
     [HttpGet("exercise")]
-    public async Task<IActionResult> GetByExercise([FromQuery] string skill, [FromQuery] int exerciseId)
+    public async Task<IActionResult> GetByExercise([FromQuery] int exerciseId)
     {
-        var list = await _questionService.GetByExerciseAsync(skill, exerciseId);
+        var list = await _questionService.GetByExerciseAsync(exerciseId); // TPH: Updated signature
         return Ok(list);
     }
 

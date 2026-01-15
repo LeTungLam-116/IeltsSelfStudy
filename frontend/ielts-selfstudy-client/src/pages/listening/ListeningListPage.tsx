@@ -1,30 +1,47 @@
-import { useEffect, useState } from "react";
-import { getListeningExercises, type ListeningExerciseDto } from "../../api/listeningExerciseApi";
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useExerciseStore } from "../../stores";
+import { ExerciseList } from "../../components/exercises";
 
 function ListeningListPage() {
-  const [items, setItems] = useState<ListeningExerciseDto[]>([]);
+  const navigate = useNavigate();
+  const {
+    exercises,
+    isLoading,
+    error,
+    fetchExercises,
+    startExercise
+  } = useExerciseStore();
 
   useEffect(() => {
-    getListeningExercises().then(setItems).catch(console.error);
-  }, []);
+    fetchExercises('Listening');
+  }, [fetchExercises]);
+
+  const handleExerciseStart = (exerciseId: number) => {
+    const exercise = exercises.find(e => e.id === exerciseId);
+    if (exercise) {
+      startExercise(exercise);
+      navigate(`/listening/${exerciseId}`);
+    }
+  };
 
   return (
-    <div>
-      <h2>Listening Exercises</h2>
-      {items.length === 0 ? (
-        <p>Chưa có bài nghe nào.</p>
-      ) : (
-        <ul>
-          {items.map((e) => (
-            <li key={e.id}>
-              <strong>{e.title}</strong> – {e.level} – {e.questionCount} câu
-              {" "}
-              <Link to={`/listening/${e.id}`}>Làm bài</Link>
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="space-y-6">
+      <div className="border-b border-gray-200 pb-4">
+        <h1 className="text-3xl font-bold text-gray-900">Listening Practice</h1>
+        <p className="mt-2 text-gray-600">
+          Improve your listening skills with our collection of IELTS listening exercises.
+          Practice with different difficulty levels and topics.
+        </p>
+      </div>
+
+      <ExerciseList
+        exercises={exercises}
+        isLoading={isLoading}
+        error={error}
+        onExerciseStart={handleExerciseStart}
+        emptyMessage="No listening exercises available at the moment. Please check back later."
+      />
     </div>
   );
 }

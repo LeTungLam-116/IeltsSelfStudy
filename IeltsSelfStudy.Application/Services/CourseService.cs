@@ -10,15 +10,18 @@ public class CourseService : ICourseService
 {
     private readonly IGenericRepository<Course> _courseRepo;
     private readonly IGenericRepository<CourseExercise> _courseExerciseRepo;
+    private readonly IGenericRepository<Exercise> _exerciseRepo;
     private readonly ILogger<CourseService> _logger;
 
     public CourseService(
         IGenericRepository<Course> courseRepo,
         IGenericRepository<CourseExercise> courseExerciseRepo,
+        IGenericRepository<Exercise> exerciseRepo,
         ILogger<CourseService> logger)
     {
         _courseRepo = courseRepo;
         _courseExerciseRepo = courseExerciseRepo;
+        _exerciseRepo = exerciseRepo;
         _logger = logger;
     }
 
@@ -147,8 +150,9 @@ public class CourseService : ICourseService
     // Thêm Exercise vào Course
     public async Task<CourseExerciseDto> AddExerciseToCourseAsync(int courseId, AddExerciseToCourseRequest request)
     {
-        _logger.LogInformation("Adding exercise to course. CourseId: {CourseId}, Skill: {Skill}, ExerciseId: {ExerciseId}", 
-            courseId, request.Skill, request.ExerciseId);
+        _logger.LogInformation("Adding exercise to course. CourseId: {CourseId}, ExerciseId: {ExerciseId}",
+            courseId, request.ExerciseId);
+
         // Kiểm tra course tồn tại
         var course = await _courseRepo.GetByIdAsync(courseId);
         if (course is null)
@@ -156,23 +160,30 @@ public class CourseService : ICourseService
             _logger.LogError("Course not found when adding exercise: {CourseId}", courseId);
             throw new InvalidOperationException("Course not found.");
         }
-        // Kiểm tra exercise đã tồn tại trong course chưa
-        var existing = (await _courseExerciseRepo.GetAllAsync())
-            .FirstOrDefault(ce => ce.CourseId == courseId 
-                                  && ce.Skill == request.Skill 
-                                  && ce.ExerciseId == request.ExerciseId);
-        
-        if (existing != null)
+
+        // Kiểm tra exercise tồn tại
+        var exercise = await _exerciseRepo.GetByIdAsync(request.ExerciseId);
+        if (exercise is null)
         {
-            _logger.LogWarning("Exercise already exists in course. CourseId: {CourseId}, Skill: {Skill}, ExerciseId: {ExerciseId}", 
-                courseId, request.Skill, request.ExerciseId);
+            _logger.LogError("Exercise not found: {ExerciseId}", request.ExerciseId);
+            throw new InvalidOperationException("Exercise not found.");
+        }
+
+        // Kiểm tra exercise đã tồn tại trong course chưa
+        var allCourseExercises = await _courseExerciseRepo.GetAllAsync();
+        var existing = allCourseExercises.Where(ce => ce.CourseId == courseId && ce.ExerciseId == request.ExerciseId).ToList();
+
+        if (existing.Any())
+        {
+            _logger.LogWarning("Exercise already exists in course. CourseId: {CourseId}, ExerciseId: {ExerciseId}",
+                courseId, request.ExerciseId);
             throw new InvalidOperationException("Exercise already exists in this course.");
         }
+
         // Tạo CourseExercise
         var courseExercise = new CourseExercise
         {
             CourseId = courseId,
-            Skill = request.Skill,
             ExerciseId = request.ExerciseId,
             Order = request.Order,
             LessonNumber = request.LessonNumber,
@@ -182,7 +193,19 @@ public class CourseService : ICourseService
         await _courseExerciseRepo.AddAsync(courseExercise);
         await _courseExerciseRepo.SaveChangesAsync();
 
-        return MapToCourseExerciseDto(courseExercise);
+        // Create DTO
+        var courseExerciseDto = new CourseExerciseDto
+        {
+            Id = courseExercise.Id,
+            CourseId = courseExercise.CourseId,
+            Skill = exercise?.Type ?? "Unknown",
+            ExerciseId = courseExercise.ExerciseId,
+            Order = courseExercise.Order,
+            LessonNumber = courseExercise.LessonNumber,
+            CreatedAt = courseExercise.CreatedAt
+        };
+
+        return courseExerciseDto;
     }
 
     // Lấy danh sách Exercises của Course
@@ -190,11 +213,16 @@ public class CourseService : ICourseService
     {
         _logger.LogDebug("Getting exercises for course: {CourseId}", courseId);
         var courseExercises = await _courseExerciseRepo.GetAllAsync();
-        var result = courseExercises
+        var filteredExercises = courseExercises
             .Where(ce => ce.CourseId == courseId)
             .OrderBy(ce => ce.Order)
-            .Select(MapToCourseExerciseDto)
             .ToList();
+
+        var result = new List<CourseExerciseDto>();
+        foreach (var ce in filteredExercises)
+        {
+            result.Add(await MapToCourseExerciseDtoAsync(ce));
+        }
         
         _logger.LogDebug("Retrieved {Count} exercises for course {CourseId}", result.Count, courseId);
         return result;
@@ -259,15 +287,27 @@ public class CourseService : ICourseService
             CreatedAt = c.CreatedAt
         };
 
-    private static CourseExerciseDto MapToCourseExerciseDto(CourseExercise ce) =>
-        new()
+    private async Task<CourseExerciseDto> MapToCourseExerciseDtoAsync(CourseExercise ce)
+    {
+        var exercise = await _exerciseRepo.GetByIdAsync(ce.ExerciseId);
+        return new CourseExerciseDto
         {
             Id = ce.Id,
             CourseId = ce.CourseId,
-            Skill = ce.Skill,
+            Skill = exercise?.Type ?? "Unknown",
             ExerciseId = ce.ExerciseId,
             Order = ce.Order,
             LessonNumber = ce.LessonNumber,
-            CreatedAt = ce.CreatedAt
+            CreatedAt = ce.CreatedAt,
+            // Populate basic exercise info
+            Exercise = exercise != null ? new
+            {
+                Id = exercise.Id,
+                Title = exercise.Title,
+                Type = exercise.Type,
+                Level = exercise.Level,
+                QuestionCount = exercise.QuestionCount
+            } : null
         };
+    }
 }

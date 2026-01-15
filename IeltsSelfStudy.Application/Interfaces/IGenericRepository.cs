@@ -1,4 +1,5 @@
 ﻿using IeltsSelfStudy.Application.DTOs.Common;
+using IeltsSelfStudy.Domain.Entities;
 
 public interface IGenericRepository<TEntity> where TEntity : class
 {

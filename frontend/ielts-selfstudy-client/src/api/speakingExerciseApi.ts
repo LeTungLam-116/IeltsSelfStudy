@@ -13,27 +13,6 @@ export interface SpeakingExerciseDto {
   createdAt: string;
 }
 
-export interface CreateSpeakingExerciseRequest {
-  title: string;
-  description?: string | null;
-  part: string;
-  question: string;
-  topic?: string | null;
-  level: string;
-  tips?: string | null;
-}
-
-export interface UpdateSpeakingExerciseRequest {
-  title: string;
-  description?: string | null;
-  part: string;
-  question: string;
-  topic?: string | null;
-  level: string;
-  tips?: string | null;
-  isActive: boolean;
-}
-
 export async function getSpeakingExercises(): Promise<SpeakingExerciseDto[]> {
   const res = await httpClient.get<SpeakingExerciseDto[]>("/speakingexercises");
   return res.data;
@@ -66,18 +45,4 @@ export async function evaluateSpeaking(
     payload
   );
   return res.data;
-}
-
-export async function createSpeakingExercise(request: CreateSpeakingExerciseRequest): Promise<SpeakingExerciseDto> {
-  const res = await httpClient.post<SpeakingExerciseDto>("/speakingexercises", request);
-  return res.data;
-}
-
-export async function updateSpeakingExercise(id: number, request: UpdateSpeakingExerciseRequest): Promise<SpeakingExerciseDto> {
-  const res = await httpClient.put<SpeakingExerciseDto>(`/speakingexercises/${id}`, request);
-  return res.data;
-}
-
-export async function deleteSpeakingExercise(id: number): Promise<void> {
-  await httpClient.delete(`/speakingexercises/${id}`);
 }

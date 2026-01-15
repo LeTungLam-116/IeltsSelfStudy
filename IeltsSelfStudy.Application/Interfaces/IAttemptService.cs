@@ -10,7 +10,7 @@ public interface IAttemptService
     
     Task<PagedResponse<AttemptDto>> GetByUserPagedAsync(int userId, PagedRequest request);
     Task<PagedResponse<AttemptDto>> GetByUserAndSkillPagedAsync(int userId, string skill, PagedRequest request);
-    Task<PagedResponse<AttemptDto>> GetByExercisePagedAsync(string skill, int exerciseId, PagedRequest request);
+    Task<PagedResponse<AttemptDto>> GetByExercisePagedAsync(int exerciseId, PagedRequest request);
     
     Task<AttemptDto?> UpdateAsync(int id, UpdateAttemptRequest request);
     Task<bool> DeleteAsync(int id);
