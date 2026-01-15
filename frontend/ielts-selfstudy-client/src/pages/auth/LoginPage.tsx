@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { Button } from '../../components/ui';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -23,8 +24,14 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       await login(formData.email, formData.password);
-      // Don't hardcode redirect, let the routing system handle it based on role
-      navigate('/');
+      // User state is updated synchronously in Zustand, so we can access it immediately
+      const currentUser = useAuthStore.getState().user;
+
+      if (currentUser?.role?.toLowerCase() === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch {
       // Error is handled by the store
     }
@@ -77,13 +84,14 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <button
+            <Button
               type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              loading={isLoading}
+              fullWidth
+              size="md"
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
-            </button>
+            </Button>
           </div>
           
           <div className="text-center">

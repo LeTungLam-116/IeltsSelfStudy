@@ -15,11 +15,6 @@ export async function getUsers(): Promise<UserDto[]> {
   return res.data;
 }
 
-export async function getUserById(id: number): Promise<UserDto> {
-  const res = await httpClient.get<UserDto>(`/users/${id}`);
-  return res.data;
-}
-
 export async function deleteUser(id: number): Promise<void> {
   await httpClient.delete(`/users/${id}`);
 }

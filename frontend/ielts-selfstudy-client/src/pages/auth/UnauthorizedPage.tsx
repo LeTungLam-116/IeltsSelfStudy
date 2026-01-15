@@ -4,63 +4,48 @@ import { useAuthStore } from '../../stores/authStore';
 export default function UnauthorizedPage() {
   const { user } = useAuthStore();
 
-  const getDashboardPath = () => {
-    return user?.role === 'Admin' ? '/admin/dashboard' : '/dashboard';
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 text-center">
         <div>
-          <div className="mx-auto h-24 w-24 text-red-500">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-              />
-            </svg>
+          <div className="mx-auto h-24 w-24 text-red-500 mb-4">
+            🚫
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
             Access Denied
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="text-gray-600 mb-6">
             You don't have permission to access this page.
           </p>
         </div>
 
         <div className="space-y-4">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-700">
-                  <strong>Current User:</strong> {user?.fullName || 'Unknown'}
-                </p>
-                <p className="text-sm text-gray-700">
-                  <strong>Role:</strong> {user?.role || 'Unknown'}
-                </p>
-              </div>
+          {user?.role === 'admin' ? (
+            <Link
+              to="/admin/dashboard"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Go to Admin Dashboard
+            </Link>
+          ) : (
+            <Link
+              to="/dashboard"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Go to Dashboard
+            </Link>
+          )}
 
-              <div className="border-t border-gray-200 pt-4">
-                <Link
-                  to={getDashboardPath()}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Go to Dashboard
-                </Link>
-              </div>
+          <Link
+            to="/login"
+            className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Back to Login
+          </Link>
+        </div>
 
-              <div className="text-center">
-                <Link
-                  to="/login"
-                  className="text-sm text-blue-600 hover:text-blue-500"
-                >
-                  Sign in with different account
-                </Link>
-              </div>
-            </div>
-          </div>
+        <div className="text-sm text-gray-500">
+          <p>Current role: <span className="font-medium capitalize">{user?.role || 'None'}</span></p>
         </div>
       </div>
     </div>

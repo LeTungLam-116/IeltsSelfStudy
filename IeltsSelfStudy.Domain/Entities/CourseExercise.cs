@@ -5,12 +5,11 @@ public class CourseExercise
     public int Id { get; set; }
     
     public int CourseId { get; set; }
-
     public Course Course { get; set; } = null!;
 
-    public string Skill { get; set; } = string.Empty;
-    
+    // TPH: Direct reference to Exercise entity
     public int ExerciseId { get; set; }
+    public Exercise Exercise { get; set; } = null!;
     
     /// <summary>
     /// Thứ tự trong khóa học (1, 2, 3...)

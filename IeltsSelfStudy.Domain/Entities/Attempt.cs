@@ -5,16 +5,11 @@ public class Attempt
     public int Id { get; set; }
 
     public int UserId { get; set; }
+    public User User { get; set; } = null!;
 
-    /// <summary>
-    /// Listening / Reading / Writing / Speaking
-    /// </summary>
-    public string Skill { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Id của bài luyện (ListeningExercise.Id, ReadingExercise.Id, ...)
-    /// </summary>
+    // TPH: Direct reference to Exercise entity
     public int ExerciseId { get; set; }
+    public Exercise Exercise { get; set; } = null!;
 
     public double? Score { get; set; }
 

@@ -9,25 +9,27 @@ namespace IeltsSelfStudy.Application.Services;
 public class AttemptService : IAttemptService
 {
     private readonly IGenericRepository<Attempt> _attemptRepo;
+    private readonly IGenericRepository<Exercise> _exerciseRepo;
     private readonly ILogger<AttemptService> _logger;
 
     public AttemptService(
         IGenericRepository<Attempt> attemptRepo,
+        IGenericRepository<Exercise> exerciseRepo,
         ILogger<AttemptService> logger)
     {
         _attemptRepo = attemptRepo;
+        _exerciseRepo = exerciseRepo;
         _logger = logger;
     }
 
     public async Task<AttemptDto> CreateAsync(CreateAttemptRequest request)
     {
-        _logger.LogInformation("Creating attempt. UserId: {UserId}, Skill: {Skill}, ExerciseId: {ExerciseId}", 
-            request.UserId, request.Skill, request.ExerciseId);
+        _logger.LogInformation("Creating attempt. UserId: {UserId}, ExerciseId: {ExerciseId}",
+            request.UserId, request.ExerciseId);
         
         var entity = new Attempt
         {
             UserId = request.UserId,
-            Skill = request.Skill,
             ExerciseId = request.ExerciseId,
             Score = request.Score,
             MaxScore = request.MaxScore,
@@ -40,10 +42,10 @@ public class AttemptService : IAttemptService
         await _attemptRepo.AddAsync(entity);
         await _attemptRepo.SaveChangesAsync();
 
-        _logger.LogInformation("Attempt created successfully. AttemptId: {AttemptId}, UserId: {UserId}, Score: {Score}", 
+        _logger.LogInformation("Attempt created successfully. AttemptId: {AttemptId}, UserId: {UserId}, Score: {Score}",
             entity.Id, request.UserId, request.Score);
-        
-        return MapToDto(entity);
+
+        return await MapToDtoAsync(entity);
     }
 
     public async Task<AttemptDto?> GetByIdAsync(int id)
@@ -56,8 +58,8 @@ public class AttemptService : IAttemptService
             _logger.LogWarning("Attempt not found: {AttemptId}", id);
             return null;
         }
-        
-        return MapToDto(entity);
+
+        return await MapToDtoAsync(entity);
     }
 
     public async Task<PagedResponse<AttemptDto>> GetByUserPagedAsync(int userId, PagedRequest request)
@@ -71,7 +73,11 @@ public class AttemptService : IAttemptService
             orderBy: q => q.OrderByDescending(a => a.CreatedAt)
         );
 
-        var dtos = items.Select(MapToDto).ToList();
+        var dtos = new List<AttemptDto>();
+        foreach (var item in items)
+        {
+            dtos.Add(await MapToDtoAsync(item));
+        }
         var response = new PagedResponse<AttemptDto>(dtos, totalCount, request);
 
         _logger.LogInformation("Retrieved {Count} attempts for UserId {UserId} (Page {PageNumber}/{TotalPages}, Total: {TotalCount})",
@@ -85,13 +91,28 @@ public class AttemptService : IAttemptService
         _logger.LogInformation("Fetching paged attempts for UserId {UserId}, Skill {Skill}. Page {PageNumber}, Size {PageSize}",
             userId, skill, request.PageNumber, request.PageSize);
 
-        var (items, totalCount) = await _attemptRepo.GetPagedAsync(
+        var (attempts, totalCount) = await _attemptRepo.GetPagedAsync(
             request,
-            filter: q => q.Where(a => a.UserId == userId && a.Skill == skill && a.IsActive),
+            filter: q => q.Where(a => a.UserId == userId && a.IsActive),
             orderBy: q => q.OrderByDescending(a => a.CreatedAt)
         );
 
-        var dtos = items.Select(MapToDto).ToList();
+        // Filter by skill after querying (temporary fix until TPH works)
+        var filteredAttempts = new List<Attempt>();
+        foreach (var attempt in attempts)
+        {
+            var exercise = await _exerciseRepo.GetByIdAsync(attempt.ExerciseId);
+            if (exercise?.Type == skill)
+            {
+                filteredAttempts.Add(attempt);
+            }
+        }
+
+        var dtos = new List<AttemptDto>();
+        foreach (var item in filteredAttempts)
+        {
+            dtos.Add(await MapToDtoAsync(item));
+        }
         var response = new PagedResponse<AttemptDto>(dtos, totalCount, request);
 
         _logger.LogInformation("Retrieved {Count} attempts for UserId {UserId}, Skill {Skill} (Page {PageNumber}/{TotalPages}, Total: {TotalCount})",
@@ -100,22 +121,26 @@ public class AttemptService : IAttemptService
         return response;
     }
 
-    public async Task<PagedResponse<AttemptDto>> GetByExercisePagedAsync(string skill, int exerciseId, PagedRequest request)
+    public async Task<PagedResponse<AttemptDto>> GetByExercisePagedAsync(int exerciseId, PagedRequest request)
     {
-        _logger.LogInformation("Fetching paged attempts for Skill {Skill}, ExerciseId {ExerciseId}. Page {PageNumber}, Size {PageSize}",
-            skill, exerciseId, request.PageNumber, request.PageSize);
+        _logger.LogInformation("Fetching paged attempts for ExerciseId {ExerciseId}. Page {PageNumber}, Size {PageSize}",
+            exerciseId, request.PageNumber, request.PageSize);
 
-        var (items, totalCount) = await _attemptRepo.GetPagedAsync(
+        var (attempts, totalCount) = await _attemptRepo.GetPagedAsync(
             request,
-            filter: q => q.Where(a => a.Skill == skill && a.ExerciseId == exerciseId && a.IsActive),
+            filter: q => q.Where(a => a.ExerciseId == exerciseId && a.IsActive),
             orderBy: q => q.OrderByDescending(a => a.CreatedAt)
         );
 
-        var dtos = items.Select(MapToDto).ToList();
+        var dtos = new List<AttemptDto>();
+        foreach (var item in attempts)
+        {
+            dtos.Add(await MapToDtoAsync(item));
+        }
         var response = new PagedResponse<AttemptDto>(dtos, totalCount, request);
 
-        _logger.LogInformation("Retrieved {Count} attempts for Skill {Skill}, ExerciseId {ExerciseId} (Page {PageNumber}/{TotalPages}, Total: {TotalCount})",
-            dtos.Count, skill, exerciseId, response.PageNumber, response.TotalPages, totalCount);
+        _logger.LogInformation("Retrieved {Count} attempts for ExerciseId {ExerciseId} (Page {PageNumber}/{TotalPages}, Total: {TotalCount})",
+            dtos.Count, exerciseId, response.PageNumber, response.TotalPages, totalCount);
 
         return response;
     }
@@ -141,7 +166,7 @@ public class AttemptService : IAttemptService
         await _attemptRepo.SaveChangesAsync();
 
         _logger.LogInformation("Attempt updated successfully: {AttemptId}", id);
-        return MapToDto(entity);
+        return await MapToDtoAsync(entity);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -164,12 +189,14 @@ public class AttemptService : IAttemptService
         return true;
     }
 
-    private static AttemptDto MapToDto(Attempt e) =>
-        new()
+    private async Task<AttemptDto> MapToDtoAsync(Attempt e)
+    {
+        var exercise = await _exerciseRepo.GetByIdAsync(e.ExerciseId);
+        return new AttemptDto
         {
             Id = e.Id,
             UserId = e.UserId,
-            Skill = e.Skill,
+            Skill = exercise?.Type ?? "Unknown",
             ExerciseId = e.ExerciseId,
             Score = e.Score,
             MaxScore = e.MaxScore,
@@ -178,4 +205,5 @@ public class AttemptService : IAttemptService
             IsActive = e.IsActive,
             CreatedAt = e.CreatedAt
         };
+    }
 }

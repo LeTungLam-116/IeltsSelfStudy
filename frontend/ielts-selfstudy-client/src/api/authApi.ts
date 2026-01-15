@@ -1,37 +1,5 @@
 import httpClient from "./httpClient";
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface RegisterRequest {
-  email: string;
-  fullName: string;
-  password: string;
-  role?: string;
-  targetBand?: number;
-}
-
-export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  accessTokenExpiresAt: string;
-  refreshTokenExpiresAt: string;
-  user: UserInfo;
-}
-
-export interface UserInfo {
-  id: number;
-  email: string;
-  fullName: string;
-  role: string;
-  targetBand: number;
-}
-
-export interface RefreshTokenRequest {
-  refreshToken: string;
-}
+import type { LoginRequest, RegisterRequest, AuthResponse, RefreshTokenRequest } from "../types/auth";
 
 export async function login(loginData: LoginRequest): Promise<AuthResponse> {
   const response = await httpClient.post<AuthResponse>("/auth/login", loginData);

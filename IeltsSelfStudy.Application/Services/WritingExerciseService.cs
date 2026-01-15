@@ -1,30 +1,28 @@
 ﻿using IeltsSelfStudy.Application.DTOs.WritingExercises;
 using IeltsSelfStudy.Application.DTOs.Common;
-using IeltsSelfStudy.Application.Interfaces;
-using IeltsSelfStudy.Application.DTOs.Attempts;
-using IeltsSelfStudy.Domain.Entities;
-using IeltsSelfStudy.Application.Common;
-using IeltsSelfStudy.Application.Abstractions;
-using System.Text.Json;
 using IeltsSelfStudy.Application.DTOs.AI;
+using IeltsSelfStudy.Application.Abstractions;
+using IeltsSelfStudy.Application.Interfaces;
+using IeltsSelfStudy.Domain.Entities;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
 namespace IeltsSelfStudy.Application.Services;
 
 public class WritingExerciseService : IWritingExerciseService
 {
-    private readonly IGenericRepository<WritingExercise> _writingRepo;
+    private readonly IGenericRepository<Exercise> _exerciseRepo; // TPH
     private readonly IGenericRepository<Attempt> _attemptRepo;
     private readonly IOpenAiGradingService _aiGradingService;
     private readonly ILogger<WritingExerciseService> _logger;
 
     public WritingExerciseService(
-        IGenericRepository<WritingExercise> writingRepo,
+        IGenericRepository<Exercise> exerciseRepo, // TPH
         IGenericRepository<Attempt> attemptRepo,
         IOpenAiGradingService aiGradingService,
         ILogger<WritingExerciseService> logger)
     {
-        _writingRepo = writingRepo;
+        _exerciseRepo = exerciseRepo; // TPH: Changed from _writingRepo
         _attemptRepo = attemptRepo;
         _aiGradingService = aiGradingService;
         _logger = logger;
@@ -34,8 +32,10 @@ public class WritingExerciseService : IWritingExerciseService
     {
         _logger.LogInformation("Getting all writing exercises");
 
-        var list = await _writingRepo.GetAllAsync();
-        var result = list.Where(x => x.IsActive).Select(MapToDto).ToList();
+        // TPH: Filter exercises by Type = "Writing"
+        var allExercises = await _exerciseRepo.GetAllAsync();
+        var list = allExercises.Where(e => e.Type == "Writing" && e.IsActive).ToList();
+        var result = list.Select(MapToDto).ToList();
 
         _logger.LogInformation("Retrieved {Count} writing exercises", result.Count);
         return result;
@@ -46,10 +46,11 @@ public class WritingExerciseService : IWritingExerciseService
         _logger.LogInformation("Getting paged writing exercises. PageNumber: {PageNumber}, PageSize: {PageSize}",
             request.PageNumber, request.PageSize);
 
-        var (items, totalCount) = await _writingRepo.GetPagedAsync(
+        // TPH: Filter by Type = "Writing" and IsActive
+        var (items, totalCount) = await _exerciseRepo.GetPagedAsync(
             request,
-            filter: q => q.Where(w => w.IsActive),
-            orderBy: q => q.OrderByDescending(w => w.CreatedAt)
+            filter: q => q.Where(e => e.Type == "Writing" && e.IsActive),
+            orderBy: q => q.OrderByDescending(e => e.CreatedAt)
         );
 
         var dtos = items.Select(MapToDto).ToList();
@@ -63,26 +64,26 @@ public class WritingExerciseService : IWritingExerciseService
     public async Task<WritingExerciseDto?> GetByIdAsync(int id)
     {
         _logger.LogDebug("Getting writing exercise by ID: {ExerciseId}", id);
-        
-        var item = await _writingRepo.GetByIdAsync(id);
-        if (item is null)
+        // TPH: Get exercise and verify it's a writing exercise
+        var item = await _exerciseRepo.GetByIdAsync(id);
+        if (item is null || item.Type != "Writing")
         {
             _logger.LogWarning("Writing exercise not found: {ExerciseId}", id);
             return null;
         }
-        
         return MapToDto(item);
     }
 
     public async Task<WritingExerciseDto> CreateAsync(CreateWritingExerciseRequest request)
     {
         _logger.LogInformation("Creating new writing exercise: {Title}", request.Title);
-        
-        var entity = new WritingExercise
+
+        var entity = new Exercise // TPH: Changed from WritingExercise to Exercise
         {
+            Type = "Writing", // TPH: Set discriminator
             Title = request.Title,
             Description = request.Description,
-            TaskType = request.TaskType,
+            TaskType = request.TaskType, // TPH: Nullable field
             Question = request.Question,
             Topic = request.Topic,
             Level = request.Level,
@@ -92,24 +93,26 @@ public class WritingExerciseService : IWritingExerciseService
             CreatedAt = DateTime.UtcNow
         };
 
-        await _writingRepo.AddAsync(entity);
-        await _writingRepo.SaveChangesAsync();
+        await _exerciseRepo.AddAsync(entity);
+        await _exerciseRepo.SaveChangesAsync();
+        _logger.LogInformation("Created writing exercise with ID: {ExerciseId}", entity.Id);
 
-        _logger.LogInformation("Writing exercise created successfully: {ExerciseId}, Title: {Title}", entity.Id, entity.Title);
         return MapToDto(entity);
     }
 
     public async Task<WritingExerciseDto?> UpdateAsync(int id, UpdateWritingExerciseRequest request)
     {
         _logger.LogInformation("Updating writing exercise: {ExerciseId}", id);
-        
-        var entity = await _writingRepo.GetByIdAsync(id);
-        if (entity is null)
+
+        // TPH: Get exercise and verify it's a writing exercise
+        var entity = await _exerciseRepo.GetByIdAsync(id);
+        if (entity is null || entity.Type != "Writing")
         {
             _logger.LogWarning("Writing exercise not found for update: {ExerciseId}", id);
             return null;
         }
 
+        // TPH: Update only writing-specific fields
         entity.Title = request.Title;
         entity.Description = request.Description;
         entity.TaskType = request.TaskType;
@@ -118,9 +121,10 @@ public class WritingExerciseService : IWritingExerciseService
         entity.Level = request.Level;
         entity.MinWordCount = request.MinWordCount;
         entity.SampleAnswer = request.SampleAnswer;
+        entity.IsActive = request.IsActive;
 
-        _writingRepo.Update(entity);
-        await _writingRepo.SaveChangesAsync();
+        _exerciseRepo.Update(entity); // TPH: Changed from _writingRepo
+        await _exerciseRepo.SaveChangesAsync();
 
         _logger.LogInformation("Writing exercise updated successfully: {ExerciseId}", id);
         return MapToDto(entity);
@@ -129,17 +133,20 @@ public class WritingExerciseService : IWritingExerciseService
     public async Task<bool> DeleteAsync(int id)
     {
         _logger.LogInformation("Deleting writing exercise: {ExerciseId}", id);
-        
-        var entity = await _writingRepo.GetByIdAsync(id);
-        if (entity is null)
+
+        // TPH: Get exercise and verify it's a writing exercise
+        var entity = await _exerciseRepo.GetByIdAsync(id);
+        if (entity is null || entity.Type != "Writing")
         {
             _logger.LogWarning("Writing exercise not found for deletion: {ExerciseId}", id);
             return false;
         }
 
+        // Soft delete
         entity.IsActive = false;
-        _writingRepo.Update(entity);
-        await _writingRepo.SaveChangesAsync();
+
+        _exerciseRepo.Update(entity); // TPH: Changed from _writingRepo
+        await _exerciseRepo.SaveChangesAsync();
 
         _logger.LogInformation("Writing exercise deleted successfully: {ExerciseId}", id);
         return true;
@@ -147,14 +154,14 @@ public class WritingExerciseService : IWritingExerciseService
 
     public async Task<EvaluateWritingResponse> EvaluateAsync(int writingExerciseId, EvaluateWritingRequest request)
     {
-        _logger.LogInformation("Evaluating writing exercise. ExerciseId: {ExerciseId}, UserId: {UserId}", 
+        _logger.LogInformation("Evaluating writing exercise. ExerciseId: {ExerciseId}, UserId: {UserId}",
             writingExerciseId, request.UserId);
-        // 1. Lấy đề Writing (DbContext tự đóng sau khi xong)
-        var exercise = await _writingRepo.GetByIdAsync(writingExerciseId);
-        if (exercise is null)
+        // 1. Lấy đề Writing (TPH: Get exercise and verify it's a writing exercise)
+        var exercise = await _exerciseRepo.GetByIdAsync(writingExerciseId);
+        if (exercise is null || exercise.Type != "Writing")
         {
             _logger.LogError("Writing exercise not found for evaluation: {ExerciseId}", writingExerciseId);
-            throw new InvalidOperationException("Writing exercise not found.");
+            throw new InvalidOperationException("Writing exercise not found or not a writing exercise.");
         }
 
         // 2. Copy dữ liệu cần thiết (không cần entity nữa)
@@ -218,7 +225,7 @@ public class WritingExerciseService : IWritingExerciseService
         var attempt = new Attempt
         {
             UserId = request.UserId,
-            Skill = "Writing",
+            // TPH: Skill được suy ra từ Exercise.Type, không cần lưu riêng
             ExerciseId = writingExerciseId,
             Score = aiFeedback.OverallBand,
             MaxScore = 9.0,
@@ -246,7 +253,7 @@ public class WritingExerciseService : IWritingExerciseService
     /// <summary>
     /// Tạo prompt chi tiết cho AI để chấm bài Writing
     /// </summary>
-    private static string CreatePromptForAI(WritingExercise exercise, EvaluateWritingRequest request)
+    private static string CreatePromptForAI(Exercise exercise, EvaluateWritingRequest request)
     {
         var prompt = $@"You are an experienced IELTS Writing examiner. Please evaluate the following essay according to IELTS Writing Task {exercise.TaskType} criteria.
 
@@ -283,17 +290,17 @@ public class WritingExerciseService : IWritingExerciseService
         return prompt;
     }
 
-    private static WritingExerciseDto MapToDto(WritingExercise e) =>
+    private static WritingExerciseDto MapToDto(Exercise e) => // TPH: Changed from WritingExercise to Exercise
         new()
         {
             Id = e.Id,
             Title = e.Title,
             Description = e.Description,
-            TaskType = e.TaskType,
+            TaskType = e.TaskType, // TPH: Nullable field
             Question = e.Question,
             Topic = e.Topic,
             Level = e.Level,
-            MinWordCount = e.MinWordCount,
+            MinWordCount = e.MinWordCount ?? 250, // TPH: Default value for nullable
             SampleAnswer = e.SampleAnswer,
             IsActive = e.IsActive,
             CreatedAt = e.CreatedAt

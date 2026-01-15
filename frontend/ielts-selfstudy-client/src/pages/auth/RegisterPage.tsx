@@ -44,10 +44,10 @@ export default function RegisterPage() {
         formData.email,
         formData.fullName,
         formData.password,
-        'Student',
+        'user',
         formData.targetBand
       );
-      navigate('/');
+      navigate('/dashboard');
     } catch {
       // Error handled by store
     }

@@ -7,9 +7,6 @@ public class CreateAttemptRequest
     [Required]
     public int UserId { get; set; }
 
-    [Required, MaxLength(50)]
-    public string Skill { get; set; } = string.Empty; // "Listening", "Reading", ...
-
     [Required]
     public int ExerciseId { get; set; }
 

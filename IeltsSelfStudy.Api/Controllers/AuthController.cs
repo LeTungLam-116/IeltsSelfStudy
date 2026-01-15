@@ -1,5 +1,6 @@
 using IeltsSelfStudy.Application.DTOs.Auth;
 using IeltsSelfStudy.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -36,5 +37,12 @@ public class AuthController : ControllerBase
     {
         await _auth.RevokeRefreshTokenAsync(req.RefreshToken);
         return NoContent();
+    }
+
+    [HttpGet("validate")]
+    [Authorize]
+    public IActionResult ValidateToken()
+    {
+        return Ok(new { valid = true });
     }
 }

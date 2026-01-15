@@ -4,10 +4,9 @@ public class Question
 {
     public int Id { get; set; }
 
-    public string Skill { get; set; } = string.Empty;
-
-    // Id của bài luyện (ListeningExercise.Id hoặc ReadingExercise.Id)
+    // TPH: Direct reference to Exercise entity
     public int ExerciseId { get; set; }
+    public Exercise Exercise { get; set; } = null!;
     
     // Số thứ tự câu hỏi trong bài
     public int QuestionNumber { get; set; }

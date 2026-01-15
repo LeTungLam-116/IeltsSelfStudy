@@ -72,10 +72,10 @@ public class AttemptsController : ControllerBase
     // /api/attempts/by-exercise?skill=Listening&exerciseId=5
     [HttpGet("by-exercise")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetByExercisePaged([FromQuery] string skill, [FromQuery] int exerciseId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    public async Task<IActionResult> GetByExercisePaged([FromQuery] int exerciseId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         var request = new PagedRequest { PageNumber = pageNumber, PageSize = pageSize };
-        var result = await _attemptService.GetByExercisePagedAsync(skill, exerciseId, request);
+        var result = await _attemptService.GetByExercisePagedAsync(exerciseId, request); // TPH: Updated signature
         return Ok(result);
     }
 

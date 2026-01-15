@@ -1,53 +1,54 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, Suspense, lazy } from "react";
 import UserLayout from "../components/layout/UserLayout";
 import AdminLayout from "../components/layout/AdminLayout";
 // Auth components
 import ProtectedRoute from "../components/auth/ProtectedRoute";
-import AdminRoute from "../components/auth/AdminRoute";
-import UserRoute from "../components/auth/UserRoute";
-// Auth pages
-import LoginPage from "../pages/auth/LoginPage";
-import RegisterPage from "../pages/auth/RegisterPage";
-import UnauthorizedPage from "../pages/auth/UnauthorizedPage";
-import DashboardPage from "../pages/dashboard/DashboardPage";
-// import ListeningHomePage from "../pages/listening/ListeningHomePage";
-import ReadingHomePage from "../pages/reading/ReadingHomePage.tsx";
-// import WritingHomePage from "../pages/writing/WritingHomePage";
-// import SpeakingHomePage from "../pages/speaking/SpeakingHomePage";
-import UsersPage from "../pages/users/UsersPage";
-import CoursesPage from "../pages/courses/CoursesPage.tsx";
-import ListeningListPage from "../pages/listening/ListeningListPage.tsx";
-import ListeningPracticePage from "../pages/listening/ListeningPracticePage.tsx";
-import WritingPracticePage from "../pages/writing/WritingPracticePage.tsx";
-import WritingListPage from "../pages/writing/WritingListPage.tsx";
-import WritingHistoryPage from "../pages/attempts/WritingHistoryPage";
-import AttemptDetailPage from "../pages/attempts/AttemptDetailPage";
-import SpeakingListPage from "../pages/speaking/SpeakingListPage";
-import SpeakingPracticePage from "../pages/speaking/SpeakingPracticePage";
-import SpeakingHistoryPage from "../pages/attempts/SpeakingHistoryPage";
-import ProfilePage from "../pages/profile/ProfilePage";
-import PracticePage from "../pages/practice/PracticePage";
-import HistoryPage from "../pages/history/HistoryPage";
-import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
-import ContentManagerPage from "../pages/admin/ContentManagerPage";
-import ExercisesManagementPage from "../pages/admin/ExercisesManagementPage";
-import ExerciseDetailPage from "../pages/admin/ExerciseDetailPage";
-import CoursesManagementPage from "../pages/admin/CoursesManagementPage";
-import CourseDetailPage from "../pages/admin/CourseDetailPage";
-import UserDetailPage from "../pages/users/UserDetailPage";
+import RootRedirect from "../components/auth/RootRedirect";
 import { useAuthStore } from "../stores/authStore";
+
+// Lazy load pages for better performance
+const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
+const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
+const UnauthorizedPage = lazy(() => import("../pages/auth/UnauthorizedPage"));
+const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
+const ReadingHomePage = lazy(() => import("../pages/reading/ReadingHomePage.tsx"));
+const UsersPage = lazy(() => import("../pages/users/UsersPage"));
+const CoursesPage = lazy(() => import("../pages/courses/CoursesPage.tsx"));
+const ListeningListPage = lazy(() => import("../pages/listening/ListeningListPage.tsx"));
+const ListeningPracticePage = lazy(() => import("../pages/listening/ListeningPracticePage.tsx"));
+const WritingPracticePage = lazy(() => import("../pages/writing/WritingPracticePage.tsx"));
+const WritingListPage = lazy(() => import("../pages/writing/WritingListPage.tsx"));
+const WritingHistoryPage = lazy(() => import("../pages/attempts/WritingHistoryPage"));
+const AttemptDetailPage = lazy(() => import("../pages/attempts/AttemptDetailPage"));
+const SpeakingListPage = lazy(() => import("../pages/speaking/SpeakingListPage"));
+const SpeakingPracticePage = lazy(() => import("../pages/speaking/SpeakingPracticePage"));
+const SpeakingHistoryPage = lazy(() => import("../pages/attempts/SpeakingHistoryPage"));
+
+// Admin pages (lazy loaded)
+const AdminDashboardPage = lazy(() => import("../pages/admin/AdminDashboardPage"));
+const AdminUsersPage = lazy(() => import("../pages/admin/AdminUsersPage"));
+const AdminCoursesPage = lazy(() => import("../pages/admin/AdminCoursesPage"));
+const AdminReportsPage = lazy(() => import("../pages/admin/AdminReportsPage"));
 
 export function AppRoutes() {
   const { initializeAuth } = useAuthStore();
 
   useEffect(() => {
     initializeAuth();
-  }, [initializeAuth]);
+  }, []); // Remove initializeAuth from dependencies to prevent re-initialization
 
   return (
     <BrowserRouter>
-      <Routes>
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      }>
+        <Routes>
         {/* Public auth routes */}
         <Route path="/login" element={
           <ProtectedRoute requireAuth={false}>
@@ -61,60 +62,127 @@ export function AppRoutes() {
         } />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-        {/* User-only routes (Students only) */}
-        <Route path="/*" element={
-          <UserRoute>
-            <UserLayout />
-          </UserRoute>
-        }>
-          <Route path="" element={<DashboardPage />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="practice" element={<PracticePage />} />
-          <Route path="history" element={<HistoryPage />} />
-          <Route path="profile" element={<ProfilePage />} />
-          <Route path="reading" element={<ReadingHomePage />} />
-          <Route path="courses" element={<CoursesPage />} />
-          <Route path="listening" element={<ListeningListPage />} />
-          <Route path="listening/:id" element={<ListeningPracticePage />} />
-          <Route path="writing" element={<WritingListPage />} />
-          <Route path="writing/:id" element={<WritingPracticePage />} />
-          <Route path="writing/history" element={<WritingHistoryPage />} />
-          <Route path="speaking" element={<SpeakingListPage />} />
-          <Route path="speaking/:id" element={<SpeakingPracticePage />} />
-          <Route path="speaking/history" element={<SpeakingHistoryPage />} />
-          <Route path="attempts/:id" element={<AttemptDetailPage />} />
-        </Route>
+        {/* Root redirect based on role */}
+        <Route path="/" element={
+          <ProtectedRoute>
+            <RootRedirect />
+          </ProtectedRoute>
+        } />
 
-        {/* Admin routes - Only for Admin role */}
-        <Route path="/admin/*" element={
-          <AdminRoute>
+        {/* Admin routes - nested routing */}
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRoles={['admin']}>
             <AdminLayout />
-          </AdminRoute>
+          </ProtectedRoute>
         }>
-          <Route path="" element={<AdminDashboardPage />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />
-          <Route path="content" element={<ContentManagerPage />} />
-
-          {/* Content Management */}
-          <Route path="exercises/*" element={<ExercisesManagementPage />} />
-          <Route path="exercises/:type/:id" element={<ExerciseDetailPage />} />
-
-          {/* Courses Management */}
-          <Route path="courses" element={<CoursesManagementPage />} />
-          <Route path="courses/:id" element={<CourseDetailPage />} />
-
-          {/* Users Management */}
-          <Route path="users" element={<UsersPage />} />
-          <Route path="users/:id" element={<UserDetailPage />} />
-
-          {/* Reports & Analytics */}
-          <Route path="reports/attempts-by-exercise" element={<div>Attempts by Exercise Report</div>} />
-          <Route path="reports/attempts-by-user" element={<div>Attempts by User Report</div>} />
-
-          {/* System Settings */}
-          <Route path="settings" element={<div>System Settings - OpenAI API Status</div>} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="courses" element={<AdminCoursesPage />} />
+          <Route path="reports" element={<AdminReportsPage />} />
         </Route>
-      </Routes>
+
+        {/* User routes */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <DashboardPage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/reading" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <ReadingHomePage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/users" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <UsersPage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/courses" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <CoursesPage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+
+        {/* Listening routes */}
+        <Route path="/listening" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <ListeningListPage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/listening/:id" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <ListeningPracticePage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+
+        {/* Writing routes */}
+        <Route path="/writing" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <WritingListPage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/writing/:id" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <WritingPracticePage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/writing/history" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <WritingHistoryPage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+
+        {/* Speaking routes */}
+        <Route path="/speaking" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <SpeakingListPage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/speaking/:id" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <SpeakingPracticePage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/speaking/history" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <SpeakingHistoryPage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+
+        {/* Attempt routes */}
+        <Route path="/attempts/:id" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <AttemptDetailPage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
