@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { IconDocument, IconBook, IconBell, IconEdit } from '../../components/icons';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -22,10 +23,10 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Link
           to="/writing"
-          className="bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 p-6 rounded-xl shadow-md transition-all duration-200 transform hover:scale-105 border border-blue-200"
+          className="bg-white p-6 rounded-md border shadow-sm transition-colors duration-150 border-gray-200"
         >
           <div className="text-center">
-            <div className="text-4xl mb-3">📝</div>
+            <div className="text-4xl mb-3"><IconDocument /></div>
             <h3 className="text-xl font-semibold text-blue-800 mb-2">
               Writing Practice
             </h3>
@@ -37,10 +38,10 @@ export default function DashboardPage() {
 
         <Link
           to="/reading"
-          className="bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 p-6 rounded-xl shadow-md transition-all duration-200 transform hover:scale-105 border border-green-200"
+          className="bg-white p-6 rounded-md border shadow-sm transition-colors duration-150 border-gray-200"
         >
           <div className="text-center">
-            <div className="text-4xl mb-3">📖</div>
+            <div className="text-4xl mb-3"><IconBook /></div>
             <h3 className="text-xl font-semibold text-green-800 mb-2">
               Reading Practice
             </h3>
@@ -52,10 +53,10 @@ export default function DashboardPage() {
 
         <Link
           to="/listening"
-          className="bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 p-6 rounded-xl shadow-md transition-all duration-200 transform hover:scale-105 border border-purple-200"
+          className="bg-white p-6 rounded-md border shadow-sm transition-colors duration-150 border-gray-200"
         >
           <div className="text-center">
-            <div className="text-4xl mb-3">🎧</div>
+            <div className="text-4xl mb-3"><IconBell /></div>
             <h3 className="text-xl font-semibold text-purple-800 mb-2">
               Listening Practice
             </h3>
@@ -67,10 +68,10 @@ export default function DashboardPage() {
 
         <Link
           to="/speaking"
-          className="bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 p-6 rounded-xl shadow-md transition-all duration-200 transform hover:scale-105 border border-orange-200"
+          className="bg-white p-6 rounded-md border shadow-sm transition-colors duration-150 border-gray-200"
         >
           <div className="text-center">
-            <div className="text-4xl mb-3">🎤</div>
+            <div className="text-4xl mb-3"><IconEdit /></div>
             <h3 className="text-xl font-semibold text-orange-800 mb-2">
               Speaking Practice
             </h3>

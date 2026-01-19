@@ -105,13 +105,63 @@ public class AttemptsController : ControllerBase
         // Kiểm tra quyền: chỉ user sở hữu hoặc Admin mới xóa được
         var existing = await _attemptService.GetByIdAsync(id);
         if (existing is null) return NotFound();
-        
+
         var userId = User.GetUserId();
         if (existing.UserId != userId && !User.IsInRole("Admin"))
             return Forbid();
-        
+
         var success = await _attemptService.DeleteAsync(id);
         if (!success) return NotFound();
         return NoContent();
+    }
+
+    // ===== ADMIN ENDPOINTS =====
+
+    // GET /api/attempts/admin/list
+    [HttpGet("admin/list")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetAttemptsAdmin([FromQuery] AttemptFiltersDto filters,
+                                                       [FromQuery] int pageNumber = 1,
+                                                       [FromQuery] int pageSize = 10)
+    {
+        try
+        {
+            var result = await _attemptService.GetAttemptsAsync(filters, pageNumber, pageSize);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while retrieving attempts." });
+        }
+    }
+
+    // GET /api/attempts/admin/{id}
+    [HttpGet("admin/{id:int}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetAttemptAdmin(int id)
+    {
+        var item = await _attemptService.GetByIdAsync(id);
+        if (item is null) return NotFound();
+        return Ok(item);
+    }
+
+    // POST /api/attempts/admin/{id}/grade
+    [HttpPost("admin/{id:int}/grade")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GradeAttemptAdmin(int id, [FromBody] GradeAttemptRequestDto gradeRequest)
+    {
+        try
+        {
+            var userId = User.GetUserId();
+            var gradedBy = User.Identity?.Name ?? $"User-{userId}";
+
+            var result = await _attemptService.GradeAttemptAsync(id, gradeRequest, gradedBy);
+            if (result is null) return NotFound();
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while grading the attempt." });
+        }
     }
 }

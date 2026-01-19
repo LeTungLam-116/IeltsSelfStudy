@@ -2,7 +2,9 @@
 using IeltsSelfStudy.Application.DTOs.Common;
 using IeltsSelfStudy.Application.Interfaces;
 using IeltsSelfStudy.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace IeltsSelfStudy.Application.Services;
 
@@ -45,7 +47,7 @@ public class AttemptService : IAttemptService
         _logger.LogInformation("Attempt created successfully. AttemptId: {AttemptId}, UserId: {UserId}, Score: {Score}",
             entity.Id, request.UserId, request.Score);
 
-        return await MapToDtoAsync(entity);
+        return MapToDto(entity);
     }
 
     public async Task<AttemptDto?> GetByIdAsync(int id)
@@ -59,7 +61,7 @@ public class AttemptService : IAttemptService
             return null;
         }
 
-        return await MapToDtoAsync(entity);
+        return MapToDto(entity);
     }
 
     public async Task<PagedResponse<AttemptDto>> GetByUserPagedAsync(int userId, PagedRequest request)
@@ -76,7 +78,7 @@ public class AttemptService : IAttemptService
         var dtos = new List<AttemptDto>();
         foreach (var item in items)
         {
-            dtos.Add(await MapToDtoAsync(item));
+            dtos.Add(MapToDto(item));
         }
         var response = new PagedResponse<AttemptDto>(dtos, totalCount, request);
 
@@ -111,7 +113,7 @@ public class AttemptService : IAttemptService
         var dtos = new List<AttemptDto>();
         foreach (var item in filteredAttempts)
         {
-            dtos.Add(await MapToDtoAsync(item));
+            dtos.Add(MapToDto(item));
         }
         var response = new PagedResponse<AttemptDto>(dtos, totalCount, request);
 
@@ -135,7 +137,7 @@ public class AttemptService : IAttemptService
         var dtos = new List<AttemptDto>();
         foreach (var item in attempts)
         {
-            dtos.Add(await MapToDtoAsync(item));
+            dtos.Add(MapToDto(item));
         }
         var response = new PagedResponse<AttemptDto>(dtos, totalCount, request);
 
@@ -166,7 +168,7 @@ public class AttemptService : IAttemptService
         await _attemptRepo.SaveChangesAsync();
 
         _logger.LogInformation("Attempt updated successfully: {AttemptId}", id);
-        return await MapToDtoAsync(entity);
+        return MapToDto(entity);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -189,21 +191,145 @@ public class AttemptService : IAttemptService
         return true;
     }
 
-    private async Task<AttemptDto> MapToDtoAsync(Attempt e)
+    private AttemptDto MapToDto(Attempt e)
     {
-        var exercise = await _exerciseRepo.GetByIdAsync(e.ExerciseId);
         return new AttemptDto
         {
             Id = e.Id,
             UserId = e.UserId,
-            Skill = exercise?.Type ?? "Unknown",
+            UserName = e.User?.FullName ?? string.Empty,
+            Skill = e.Exercise?.Type ?? string.Empty,
             ExerciseId = e.ExerciseId,
+            ExerciseTitle = e.Exercise?.Title ?? string.Empty,
             Score = e.Score,
             MaxScore = e.MaxScore,
             UserAnswerJson = e.UserAnswerJson,
             AiFeedback = e.AiFeedback,
+            AdminFeedback = e.AdminFeedback,
+            IsPassed = e.IsPassed,
+            GradedBy = e.GradedBy,
+            GradedAt = e.GradedAt,
             IsActive = e.IsActive,
-            CreatedAt = e.CreatedAt
+            CreatedAt = e.CreatedAt,
+            UpdatedAt = e.UpdatedAt
         };
+    }
+
+    public async Task<PagedAttemptResponseDto> GetAttemptsAsync(AttemptFiltersDto filters, int pageNumber = 1, int pageSize = 10)
+    {
+        _logger.LogInformation("Getting attempts with filters. Page: {Page}, Size: {Size}", pageNumber, pageSize);
+
+        var query = _attemptRepo.GetAll()
+            .Include(a => a.User)
+            .Include(a => a.Exercise)
+            .AsQueryable();
+
+        // Apply filters
+        if (filters.UserId.HasValue)
+        {
+            query = query.Where(a => a.UserId == filters.UserId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filters.Skill))
+        {
+            query = query.Where(a => a.Exercise != null && a.Exercise.Type == filters.Skill);
+        }
+
+        if (filters.ExerciseId.HasValue)
+        {
+            query = query.Where(a => a.ExerciseId == filters.ExerciseId.Value);
+        }
+
+
+        if (filters.IsGraded.HasValue)
+        {
+            query = filters.IsGraded.Value
+                ? query.Where(a => !string.IsNullOrEmpty(a.GradedBy))
+                : query.Where(a => string.IsNullOrEmpty(a.GradedBy));
+        }
+
+        if (filters.IsPassed.HasValue)
+        {
+            query = filters.IsPassed.Value
+                ? query.Where(a => a.Score.HasValue && a.MaxScore.HasValue && (a.Score.Value / a.MaxScore.Value) >= 0.5)
+                : query.Where(a => a.Score.HasValue && a.MaxScore.HasValue && (a.Score.Value / a.MaxScore.Value) < 0.5);
+        }
+
+        if (filters.MinScore.HasValue)
+        {
+            query = query.Where(a => a.Score >= filters.MinScore.Value);
+        }
+
+        if (filters.MaxScore.HasValue)
+        {
+            query = query.Where(a => a.Score <= filters.MaxScore.Value);
+        }
+
+        if (filters.FromDate.HasValue)
+        {
+            query = query.Where(a => a.CreatedAt >= filters.FromDate.Value);
+        }
+
+        if (filters.ToDate.HasValue)
+        {
+            query = query.Where(a => a.CreatedAt <= filters.ToDate.Value);
+        }
+
+        // Apply sorting - default by CreatedAt descending
+        query = filters.SortDirection?.ToLower() == "asc"
+            ? query.OrderBy(a => a.CreatedAt)
+            : query.OrderByDescending(a => a.CreatedAt);
+
+        var totalCount = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var dtos = new List<AttemptDto>();
+        foreach (var item in items)
+        {
+            dtos.Add(MapToDto(item));
+        }
+
+        return new PagedAttemptResponseDto
+        {
+            Items = dtos,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages
+        };
+    }
+
+    public async Task<AttemptDto?> GradeAttemptAsync(int attemptId, GradeAttemptRequestDto gradeRequest, string gradedBy)
+    {
+        _logger.LogInformation("Grading attempt {AttemptId} by {GradedBy}. Score: {Score}/{MaxScore}",
+            attemptId, gradedBy, gradeRequest.Score, gradeRequest.MaxScore);
+
+        var attempt = await _attemptRepo.GetByIdAsync(attemptId);
+        if (attempt == null)
+        {
+            _logger.LogWarning("Attempt {AttemptId} not found for grading", attemptId);
+            return null;
+        }
+
+        attempt.Score = gradeRequest.Score;
+        attempt.AdminFeedback = gradeRequest.Feedback;
+        attempt.IsPassed = gradeRequest.IsPassed;
+        attempt.GradedBy = gradedBy;
+        attempt.GradedAt = DateTime.UtcNow;
+        attempt.GradingNotes = gradeRequest.Feedback; // Note: using feedback as grading notes for now
+        attempt.UpdatedAt = DateTime.UtcNow;
+
+        _attemptRepo.Update(attempt);
+        await _attemptRepo.SaveChangesAsync();
+
+        _logger.LogInformation("Attempt {AttemptId} graded successfully. Score: {Score}/{MaxScore}",
+            attemptId, gradeRequest.Score, gradeRequest.MaxScore);
+
+        return MapToDto(attempt);
     }
 }

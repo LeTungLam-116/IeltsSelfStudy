@@ -1,7 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import type { Exercise } from '../../types';
 import { Card, Button, Badge } from '../ui';
+import { IconDocument, IconBook, IconEdit, IconBell } from '../icons';
+import StartButtonWrapper from './StartButtonWrapper';
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -17,15 +18,15 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   const getSkillIcon = (type: string) => {
     switch (type.toLowerCase()) {
       case 'listening':
-        return '🎧';
+        return <IconDocument />;
       case 'reading':
-        return '📖';
+        return <IconBook />;
       case 'writing':
-        return '✍️';
+        return <IconEdit />;
       case 'speaking':
-        return '🎤';
+        return <IconBell />;
       default:
-        return '📝';
+        return <IconDocument />;
     }
   };
 
@@ -51,69 +52,108 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   };
 
   return (
-    <Card hover className="h-full">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center space-x-2">
-          <span className="text-2xl">{getSkillIcon(exercise.type)}</span>
-          <Badge className={getSkillColor(exercise.type)}>
+    <Card hover className="h-full group cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-teal-100/50 hover:-translate-y-1 border border-gray-100 hover:border-teal-200">
+      {/* Header with icon and badges */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className={`p-2 rounded-lg ${getSkillColor(exercise.type).replace('text-', 'bg-').replace('-800', '-100').replace('-100', '-50')} transition-colors group-hover:scale-110`}>
+            <span className="text-xl">{getSkillIcon(exercise.type)}</span>
+          </div>
+          <Badge className={`${getSkillColor(exercise.type)} font-medium`}>
             {exercise.type}
           </Badge>
         </div>
-        {exercise.level && (
-          <Badge variant="outline">
-            {exercise.level}
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {exercise.level && (
+            <Badge variant="outline" className="text-xs">
+              {exercise.level}
+            </Badge>
+          )}
+          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+            exercise.isActive
+              ? 'bg-emerald-100 text-emerald-700'
+              : 'bg-red-100 text-red-700'
+          }`}>
+            {exercise.isActive ? 'Active' : 'Inactive'}
+          </span>
+        </div>
       </div>
 
-      <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+      {/* Title */}
+      <h3 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-teal-700 transition-colors leading-tight">
         {exercise.title}
       </h3>
 
+      {/* Description */}
       {exercise.description && (
-        <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+        <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
           {exercise.description}
         </p>
       )}
 
-      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-        <div className="flex items-center space-x-4">
-          <span className="flex items-center space-x-1">
-            <span>📋</span>
-            <span>{exercise.questionCount} questions</span>
-          </span>
-          {exercise.durationSeconds && (
-            <span className="flex items-center space-x-1">
-              <span>⏱️</span>
-              <span>{formatDuration(exercise.durationSeconds)}</span>
+      {/* Metadata */}
+      <div className="space-y-3 mb-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4 text-sm text-gray-500">
+            <span className="flex items-center space-x-2">
+              <IconDocument className="w-4 h-4" />
+              <span className="font-medium">
+                {exercise.type === 'Writing' && 'Writing Task'}
+                {exercise.type === 'Speaking' && 'Speaking Part'}
+                {(exercise.type === 'Listening' || exercise.type === 'Reading') &&
+                  `${exercise.questionCount || 0} questions`}
+              </span>
             </span>
-          )}
+            {exercise.durationSeconds && (
+              <span className="flex items-center space-x-2">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="12" r="9" strokeWidth="2"/>
+                  <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 7v6l4 2"/>
+                </svg>
+                <span className="font-medium">{formatDuration(exercise.durationSeconds)}</span>
+              </span>
+            )}
+          </div>
         </div>
-        <span className={`text-xs px-2 py-1 rounded-full ${
-          exercise.isActive
-            ? 'bg-green-100 text-green-800'
-            : 'bg-red-100 text-red-800'
-        }`}>
-          {exercise.isActive ? 'Active' : 'Inactive'}
-        </span>
+
+        {/* Progress indicator for visual appeal */}
+        <div className="w-full bg-gray-100 rounded-full h-1.5">
+          <div className="bg-teal-500 h-1.5 rounded-full transition-all duration-500 group-hover:bg-teal-600" style={{width: '0%'}}></div>
+        </div>
       </div>
 
+      {/* Start Button */}
       {showStartButton && (
-        <div className="mt-auto">
+        <div className="mt-auto pt-2">
           {onStart ? (
             <Button
               onClick={() => onStart(exercise.id)}
               fullWidth
               size="sm"
+              className="bg-teal-600 hover:bg-teal-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
             >
-              Start Exercise
+              <span className="flex items-center justify-center gap-2">
+                Start Exercise
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </span>
             </Button>
           ) : (
-            <Link to={`/${exercise.type.toLowerCase()}/${exercise.id}`}>
-              <Button fullWidth size="sm">
-                Start Exercise
+            <StartButtonWrapper exercise={exercise}>
+              <Button
+                fullWidth
+                size="sm"
+                className="bg-teal-600 hover:bg-teal-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  Start Exercise
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
               </Button>
-            </Link>
+            </StartButtonWrapper>
           )}
         </div>
       )}

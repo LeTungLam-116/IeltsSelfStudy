@@ -25,7 +25,34 @@ public class Attempt
     /// </summary>
     public string? AiFeedback { get; set; }
 
+    /// <summary>
+    /// Manual feedback từ admin (text)
+    /// </summary>
+    public string? AdminFeedback { get; set; }
+
+    /// <summary>
+    /// Điểm pass/fail từ admin grading
+    /// </summary>
+    public bool? IsPassed { get; set; }
+
+    /// <summary>
+    /// Username của admin đã grade
+    /// </summary>
+    public string? GradedBy { get; set; }
+
+    /// <summary>
+    /// Thời gian admin grade
+    /// </summary>
+    public DateTime? GradedAt { get; set; }
+
+    /// <summary>
+    /// Internal notes cho admin khác
+    /// </summary>
+    public string? GradingNotes { get; set; }
+
     public bool IsActive { get; set; } = true;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime? UpdatedAt { get; set; }
 }

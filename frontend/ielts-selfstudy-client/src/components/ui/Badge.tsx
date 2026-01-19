@@ -36,9 +36,14 @@ export const Badge: React.FC<BadgeProps> = ({
     sizeClasses[size],
     className
   ].filter(Boolean).join(' ');
+  // allow token-based styles for secondary (indigo) variant
+  const style: React.CSSProperties | undefined = variant === 'secondary' ? {
+    backgroundColor: 'var(--color-primary-50)',
+    color: 'var(--color-primary-700)'
+  } : undefined;
 
   return (
-    <span className={finalClassName}>
+    <span className={finalClassName} style={style}>
       {children}
     </span>
   );

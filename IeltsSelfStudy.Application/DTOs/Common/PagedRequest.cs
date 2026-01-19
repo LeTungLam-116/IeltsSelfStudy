@@ -31,6 +31,21 @@ public class PagedRequest
     /// Số items bỏ qua (Skip)
     /// </summary>
     public int Skip => (PageNumber - 1) * PageSize;
+
+    /// <summary>
+    /// Field để sort (optional)
+    /// </summary>
+    public string? SortBy { get; set; }
+
+    /// <summary>
+    /// Direction sort: "asc" hoặc "desc" (default: "asc")
+    /// </summary>
+    public string SortDirection { get; set; } = "asc";
+
+    /// <summary>
+    /// Search term (optional)
+    /// </summary>
+    public string? Search { get; set; }
 }
 
 public class PagedResponse<T>

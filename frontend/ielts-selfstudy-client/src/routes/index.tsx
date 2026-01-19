@@ -4,8 +4,8 @@ import UserLayout from "../components/layout/UserLayout";
 import AdminLayout from "../components/layout/AdminLayout";
 // Auth components
 import ProtectedRoute from "../components/auth/ProtectedRoute";
-import RootRedirect from "../components/auth/RootRedirect";
 import { useAuthStore } from "../stores/authStore";
+// import { RoutePreloader } from "../components/common/RoutePreloader"; // Temporarily disabled
 
 // Lazy load pages for better performance
 const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
@@ -13,6 +13,7 @@ const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
 const UnauthorizedPage = lazy(() => import("../pages/auth/UnauthorizedPage"));
 const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
 const ReadingHomePage = lazy(() => import("../pages/reading/ReadingHomePage.tsx"));
+const HomePage = lazy(() => import("../pages/HomePage"));
 const UsersPage = lazy(() => import("../pages/users/UsersPage"));
 const CoursesPage = lazy(() => import("../pages/courses/CoursesPage.tsx"));
 const ListeningListPage = lazy(() => import("../pages/listening/ListeningListPage.tsx"));
@@ -24,11 +25,21 @@ const AttemptDetailPage = lazy(() => import("../pages/attempts/AttemptDetailPage
 const SpeakingListPage = lazy(() => import("../pages/speaking/SpeakingListPage"));
 const SpeakingPracticePage = lazy(() => import("../pages/speaking/SpeakingPracticePage"));
 const SpeakingHistoryPage = lazy(() => import("../pages/attempts/SpeakingHistoryPage"));
+const ReadingListPage = lazy(() => import("../pages/reading/ReadingListPage"));
+const ReadingPracticePage = lazy(() => import("../pages/reading/ReadingPracticePage"));
 
 // Admin pages (lazy loaded)
 const AdminDashboardPage = lazy(() => import("../pages/admin/AdminDashboardPage"));
 const AdminUsersPage = lazy(() => import("../pages/admin/AdminUsersPage"));
-const AdminCoursesPage = lazy(() => import("../pages/admin/AdminCoursesPage"));
+const CoursesListPage = lazy(() => import("../pages/admin/courses/CoursesListPage"));
+const CourseDetailsPage = lazy(() => import("../pages/admin/courses/CourseDetailsPage"));
+const ExercisesListPage = lazy(() => import("../pages/admin/exercises/ExercisesListPage"));
+const ExerciseDetailsPage = lazy(() => import("../pages/admin/exercises/ExerciseDetailsPage"));
+const QuestionsListPage = lazy(() => import("../pages/admin/questions/QuestionsListPage"));
+const QuestionDetailsPage = lazy(() => import("../pages/admin/questions/QuestionDetailsPage"));
+const AttemptsListPage = lazy(() => import("../pages/admin/attempts/AttemptsListPage"));
+const AttemptDetailsPage = lazy(() => import("../pages/admin/attempts/AttemptDetailsPage"));
+const AttemptGradingPage = lazy(() => import("../pages/admin/attempts/AttemptGradingPage"));
 const AdminReportsPage = lazy(() => import("../pages/admin/AdminReportsPage"));
 
 export function AppRoutes() {
@@ -62,12 +73,9 @@ export function AppRoutes() {
         } />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-        {/* Root redirect based on role */}
-        <Route path="/" element={
-          <ProtectedRoute>
-            <RootRedirect />
-          </ProtectedRoute>
-        } />
+        {/* Root -> Home (public) */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/home" element={<HomePage />} />
 
         {/* Admin routes - nested routing */}
         <Route path="/admin" element={
@@ -77,7 +85,15 @@ export function AppRoutes() {
         }>
           <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="users" element={<AdminUsersPage />} />
-          <Route path="courses" element={<AdminCoursesPage />} />
+          <Route path="courses" element={<CoursesListPage />} />
+          <Route path="courses/:id" element={<CourseDetailsPage />} />
+          <Route path="exercises" element={<ExercisesListPage />} />
+          <Route path="exercises/:id" element={<ExerciseDetailsPage />} />
+          <Route path="questions" element={<QuestionsListPage />} />
+          <Route path="questions/:id" element={<QuestionDetailsPage />} />
+          <Route path="attempts" element={<AttemptsListPage />} />
+          <Route path="attempts/:id" element={<AttemptDetailsPage />} />
+          <Route path="attempts/:id/grade" element={<AttemptGradingPage />} />
           <Route path="reports" element={<AdminReportsPage />} />
         </Route>
 
@@ -169,6 +185,22 @@ export function AppRoutes() {
           <ProtectedRoute allowedRoles={['user', 'admin']}>
             <UserLayout>
               <SpeakingHistoryPage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+
+        {/* Reading routes */}
+        <Route path="/reading/list" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <ReadingListPage />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/reading/:id" element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <UserLayout>
+              <ReadingPracticePage />
             </UserLayout>
           </ProtectedRoute>
         } />

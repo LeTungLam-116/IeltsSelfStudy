@@ -2,6 +2,7 @@ import type { Exercise, ExerciseFormData, ExerciseType } from '../types';
 import { getListeningExercises, getListeningExerciseById } from '../api/listeningExerciseApi';
 import { getWritingExercises, getWritingExerciseById } from '../api/writingExerciseApi';
 import { getSpeakingExercises, getSpeakingExerciseById } from '../api/speakingExerciseApi';
+import { getReadingExercises, getReadingExerciseById } from '../api/readingExerciseApi';
 
 const STORAGE_KEY = 'mockExercises_v1';
 
@@ -17,19 +18,20 @@ async function fetchExercisesFromAPI(type?: ExerciseType): Promise<Exercise[]> {
     } else if (type === 'Speaking') {
       exercises = await getSpeakingExercises();
     } else if (type === 'Reading') {
-      // Reading exercises not implemented yet - fallback to localStorage
-      return fetchExercisesFromLocalStorage(type);
+      exercises = await getReadingExercises();
     } else {
       // No type specified - fetch all types from APIs
-      const [listening, writing, speaking] = await Promise.allSettled([
+      const [listening, writing, speaking, reading] = await Promise.allSettled([
         getListeningExercises(),
         getWritingExercises(),
         getSpeakingExercises(),
+        getReadingExercises(),
       ]);
 
       if (listening.status === 'fulfilled') exercises.push(...listening.value);
       if (writing.status === 'fulfilled') exercises.push(...writing.value);
       if (speaking.status === 'fulfilled') exercises.push(...speaking.value);
+      if (reading.status === 'fulfilled') exercises.push(...reading.value);
     }
 
     // Convert API DTOs to Exercise format
@@ -50,8 +52,10 @@ async function fetchExerciseByIdFromAPI(type: ExerciseType, id: number): Promise
       dto = await getWritingExerciseById(id);
     } else if (type === 'Speaking') {
       dto = await getSpeakingExerciseById(id);
+    } else if (type === 'Reading') {
+      dto = await getReadingExerciseById(id);
     } else {
-      // Reading or unknown type - fallback to localStorage
+      // Unknown type - fallback to localStorage
       return fetchExerciseByIdFromLocalStorage(id);
     }
 
@@ -193,8 +197,8 @@ export async function createExercise(payload: ExerciseFormData): Promise<Exercis
     title: payload.title,
     description: payload.description || null,
     level: payload.level || 'Beginner',
-    questionCount: payload.questionCount,
-    isActive: payload.isActive,
+    questionCount: payload.questionCount || 0,
+    isActive: payload.isActive ?? true,
     createdAt: new Date().toISOString(),
     // Add type-specific fields
     ...(payload.audioUrl && { audioUrl: payload.audioUrl }),
@@ -225,8 +229,8 @@ export async function updateExercise(id: number, payload: ExerciseFormData): Pro
     title: payload.title,
     description: payload.description || null,
     level: payload.level || 'Beginner',
-    questionCount: payload.questionCount,
-    isActive: payload.isActive,
+    questionCount: payload.questionCount || 0,
+    isActive: payload.isActive ?? true,
     // Update type-specific fields
     ...(payload.audioUrl !== undefined && { audioUrl: payload.audioUrl }),
     ...(payload.transcript !== undefined && { transcript: payload.transcript }),

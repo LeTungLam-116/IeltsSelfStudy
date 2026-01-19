@@ -3,3 +3,6 @@ export * from './auth';
 export * from './exercise';
 export * from './course';
 export * from './common';
+export * from './user';
+export * from './attempts';
+export * from './questions';

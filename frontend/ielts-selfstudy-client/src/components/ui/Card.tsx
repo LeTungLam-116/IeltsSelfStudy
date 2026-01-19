@@ -1,6 +1,6 @@
 import React from 'react';
 
-export interface CardProps {
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   padding?: 'none' | 'sm' | 'md' | 'lg';
@@ -34,9 +34,10 @@ export const Card: React.FC<CardProps> & {
   padding = 'md',
   shadow = 'sm',
   rounded = 'md',
-  hover = false
+  hover = false,
+  ...props
 }) => {
-  const baseClasses = 'bg-white border border-gray-200';
+  const baseClasses = 'bg-white';
 
   const paddingClasses = {
     none: '',
@@ -72,14 +73,14 @@ export const Card: React.FC<CardProps> & {
   ].filter(Boolean).join(' ');
 
   return (
-    <div className={finalClassName}>
+    <div className={finalClassName} {...props}>
       {children}
     </div>
   );
 };
 
 Card.Header = ({ children, className = '' }) => (
-  <div className={`border-b border-gray-200 pb-4 mb-4 ${className}`}>
+  <div className={`pb-4 mb-4 ${className}`}>
     {children}
   </div>
 );
@@ -91,7 +92,7 @@ Card.Content = ({ children, className = '' }) => (
 );
 
 Card.Footer = ({ children, className = '' }) => (
-  <div className={`border-t border-gray-200 pt-4 mt-4 ${className}`}>
+  <div className={`pt-4 mt-4 ${className}`}>
     {children}
   </div>
 );
