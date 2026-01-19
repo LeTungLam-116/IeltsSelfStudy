@@ -1,5 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { type ReactNode, useState } from 'react';
+import { IconBook, IconChart, IconNote, IconUser, IconDocument } from '../icons';
 import { useAuthStore } from '../../stores/authStore';
 
 interface UserLayoutProps {
@@ -18,11 +19,11 @@ export default function UserLayout({ children }: UserLayoutProps) {
   };
 
   const navigationItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: '🏠' },
-    { name: 'Writing', path: '/writing', icon: '✍️' },
-    { name: 'Speaking', path: '/speaking', icon: '🎤' },
-    { name: 'Listening', path: '/listening', icon: '🎧' },
-    { name: 'Reading', path: '/reading', icon: '📖' },
+    { name: 'Dashboard', path: '/dashboard', icon: <IconChart /> },
+    { name: 'Writing', path: '/writing', icon: <IconNote /> },
+    { name: 'Speaking', path: '/speaking', icon: <IconUser /> },
+    { name: 'Listening', path: '/listening', icon: <IconDocument /> },
+    { name: 'Reading', path: '/reading', icon: <IconBook /> },
   ];
 
   const isActivePath = (path: string) => {
@@ -38,7 +39,7 @@ export default function UserLayout({ children }: UserLayoutProps) {
             {/* Logo */}
             <Link to="/dashboard" className="flex items-center space-x-2">
               <div className="text-2xl font-bold text-blue-600">
-                📚 IELTS Self Study
+                <span className="inline-flex items-center"><IconBook className="mr-2" />IELTS Self Study</span>
               </div>
             </Link>
 
@@ -76,7 +77,7 @@ export default function UserLayout({ children }: UserLayoutProps) {
                     to="/profile"
                     className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full hover:bg-blue-200 transition-colors"
                   >
-                    👤
+                    <IconUser />
                   </Link>
                 </div>
               )}
@@ -139,15 +140,15 @@ export default function UserLayout({ children }: UserLayoutProps) {
                   <span>Profile</span>
                 </Link>
                 <button
-                  onClick={() => {
-                    handleLogout();
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="flex items-center space-x-3 px-3 py-2 w-full text-left rounded-md text-base font-medium text-red-600 hover:text-red-800 hover:bg-red-50"
-                >
-                  <span>🚪</span>
-                  <span>Logout</span>
-                </button>
+                onClick={() => {
+                  handleLogout();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center space-x-3 px-3 py-2 w-full text-left rounded-md text-base font-medium text-red-600 hover:text-red-800 hover:bg-red-50"
+              >
+                <span><IconUser /></span>
+                <span>Logout</span>
+              </button>
               </div>
             </div>
           </div>

@@ -244,8 +244,8 @@ public class IeltsDbContext : DbContext
             entity.Property(q => q.CreatedAt)
                   .IsRequired();
 
-            // Index để query nhanh hơn
-            entity.HasIndex(q => new { q.ExerciseId, q.QuestionNumber });
+            // Index để query nhanh hơn; unique to enforce one question number per exercise
+            entity.HasIndex(q => new { q.ExerciseId, q.QuestionNumber }).IsUnique();
         });
 
         // RefreshToken config by Fluent API

@@ -21,11 +21,12 @@ public class QuestionsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] PagedRequest? request)
     {
-        // Nếu không có pagination params, trả về tất cả (backward compatible)
-        if (request == null || (request.PageNumber == 1 && request.PageSize == 10))
+        // Standardize API: always return a PagedResponse shape.
+        if (request == null)
         {
             var list = await _questionService.GetAllAsync();
-            return Ok(list);
+            var paged = new PagedResponse<QuestionDto>(list, list.Count, new PagedRequest { PageNumber = 1, PageSize = list.Count == 0 ? 10 : list.Count });
+            return Ok(paged);
         }
 
         var pagedResult = await _questionService.GetPagedAsync(request);

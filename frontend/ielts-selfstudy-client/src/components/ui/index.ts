@@ -1,6 +1,10 @@
 export { Button, default as ButtonDefault } from './Button';
 export { Input, default as InputDefault } from './Input';
+export { Textarea, default as TextareaDefault } from './Textarea';
 export { Card, default as CardDefault } from './Card';
 export { Loading, Skeleton, default as LoadingDefault } from './Loading';
 export { Modal, default as ModalDefault } from './Modal';
 export { Badge, default as BadgeDefault } from './Badge';
+export { ToastProvider, useToast, default as ToastDefault } from './Toast';
+export { IconButton, default as IconButtonDefault } from './IconButton';
+export { TableWrapper, default as TableWrapperDefault } from './TableWrapper';

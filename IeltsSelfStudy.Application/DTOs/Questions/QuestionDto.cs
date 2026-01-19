@@ -13,4 +13,6 @@ public class QuestionDto
     public string? OptionsJson { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
+    // Exercise title for easier display in admin UI
+    public string ExerciseTitle { get; set; } = string.Empty;
 }

@@ -1,201 +1,236 @@
-import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-
-interface BreadcrumbItem {
-  name: string;
-  path?: string;
-}
+import { IconButton } from '../ui';
+import { IconSearch } from '../icons';
 
 export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
+
+  const navItems = [
+    { title: 'Dashboard', to: '/admin/dashboard' },
+    { title: 'Users', to: '/admin/users' },
+    { title: 'Courses', to: '/admin/courses' },
+    { title: 'Exercises', to: '/admin/exercises' },
+    { title: 'Questions', to: '/admin/questions' },
+    { title: 'Attempts', to: '/admin/attempts' },
+    { title: 'Reports', to: '/admin/reports' },
+  ];
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
+  // dropdown state & refs
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement | null>(null);
+  const userRef = useRef<HTMLDivElement | null>(null);
 
-  const navigationItems = [
-    {
-      name: 'Dashboard',
-      path: '/admin/dashboard',
-      icon: '📊',
-      description: 'Overview & Statistics'
-    },
-    {
-      name: 'Users',
-      path: '/admin/users',
-      icon: '👥',
-      description: 'User Management'
-    },
-    {
-      name: 'Courses',
-      path: '/admin/courses',
-      icon: '📚',
-      description: 'Course Management'
-    },
-    {
-      name: 'Reports',
-      path: '/admin/reports',
-      icon: '📈',
-      description: 'Analytics & Reports'
-    },
-  ];
+  // Focus management for route changes
+  useEffect(() => {
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) {
+      mainContent.focus();
+    }
+  }, [location.pathname]);
 
-  const isActivePath = (path: string) => {
-    return location.pathname === path;
-  };
-
-  const generateBreadcrumbs = (): BreadcrumbItem[] => {
-    // Auto-generate breadcrumbs based on current path
-    const pathSegments = location.pathname.split('/').filter(Boolean);
-    const crumbs: BreadcrumbItem[] = [{ name: 'Admin', path: '/admin/dashboard' }];
-
-    if (pathSegments.length > 2) {
-      const currentSection = navigationItems.find(item =>
-        item.path === `/${pathSegments[0]}/${pathSegments[1]}`
-      );
-      if (currentSection) {
-        crumbs.push({ name: currentSection.name });
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+      if (userRef.current && !userRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
       }
     }
-
-    return crumbs;
-  };
-
-  const currentBreadcrumbs = generateBreadcrumbs();
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sidebar Overlay for Mobile */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+    <>
+      {/* Skip links for accessibility */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+      <a href="#sidebar-nav" className="skip-link" style={{ top: '60px' }}>
+        Skip to navigation
+      </a>
 
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
-        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
-        <div className="flex flex-col h-full">
-          {/* Sidebar Header */}
-          <div className="flex items-center justify-between h-16 px-6 border-b bg-blue-600 text-white">
-            <div className="flex items-center space-x-2">
-              <span className="text-xl font-bold">⚙️ IELTS Admin</span>
-            </div>
-            <button
-              onClick={() => setIsSidebarOpen(false)}
-              className="lg:hidden p-1 rounded-md hover:bg-blue-700"
-            >
-              ✕
-            </button>
+      <div className="layout-wrapper">
+      <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`} aria-label="Primary navigation" role="navigation" id="sidebar-nav">
+        <div className="sidebar-top">
+            <div className="brand">
+            <div className="logo" style={{background: 'var(--sidebar-accent)'}}>IS</div>
+            <div className="brand-name" style={{color:'var(--sidebar-text)'}}>IELTS Admin</div>
           </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setIsSidebarOpen(false)}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
-                  isActivePath(item.path)
-                    ? 'bg-blue-100 text-blue-700 border-r-4 border-blue-700'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
-                }`}
-              >
-                <span className="text-lg">{item.icon}</span>
-                <div className="flex-1">
-                  <div className="font-medium">{item.name}</div>
-                  <div className="text-xs text-gray-500 group-hover:text-blue-500">
-                    {item.description}
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </nav>
-
-          {/* Sidebar Footer */}
-          <div className="border-t p-4">
-            <div className="flex items-center space-x-3 mb-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
-                👤
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-900 truncate">
-                  {user?.fullName}
-                </div>
-                <div className="text-xs text-gray-500 capitalize">
-                  {user?.role}
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-2 w-full px-3 py-2 text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
-            >
-              <span>🚪</span>
-              <span>Logout</span>
-            </button>
-          </div>
+          <button className="sidebar-toggle" onClick={() => setIsOpen((s) => !s)} aria-label="Toggle sidebar">
+            ☰
+          </button>
         </div>
-      </div>
 
-      {/* Main Content Area */}
-      <div className="lg:pl-64">
-        {/* Top Header */}
-        <header className="bg-white shadow-sm border-b sticky top-0 z-30">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-            {/* Mobile sidebar toggle */}
-            <button
-              onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-            >
-              <span className="sr-only">Open sidebar</span>
-              ☰
-            </button>
+        <nav className="sidebar-nav" role="navigation" aria-label="Primary">
+          <ul>
+            {navItems.map((it) => (
+              <li key={it.to} className={location.pathname === it.to ? 'active' : undefined}>
+                <Link to={it.to} aria-current={location.pathname === it.to ? 'page' : undefined}>{it.title}</Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-            {/* Breadcrumbs */}
-            <nav className="flex items-center space-x-2 text-sm">
-              {currentBreadcrumbs.map((crumb, index) => (
-                <div key={index} className="flex items-center">
-                  {index > 0 && <span className="mx-2 text-gray-400">/</span>}
-                  {crumb.path ? (
-                    <Link
-                      to={crumb.path}
-                      className="text-gray-600 hover:text-blue-600 font-medium"
-                    >
-                      {crumb.name}
-                    </Link>
-                  ) : (
-                    <span className="text-gray-900 font-medium">{crumb.name}</span>
-                  )}
-                </div>
-              ))}
-            </nav>
+        <div className="sidebar-footer">
+          <div className="user">
+            <div className="avatar">{user?.fullName ? user.fullName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() : 'AD'}</div>
+            <div className="info">
+              <div className="name">{user?.fullName}</div>
+              <div className="role">{user?.role}</div>
+            </div>
+          </div>
+          <button className="logout" onClick={handleLogout}>Logout</button>
+        </div>
+      </aside>
 
-            {/* Header Actions */}
-            <div className="flex items-center space-x-4">
-              <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-600">
-                <span>🕒</span>
-                <span>{new Date().toLocaleDateString()}</span>
+      <div className="main-area" id="main-content" tabIndex={-1}>
+        <header className="topbar">
+          <div className="topbar-left">
+            <button className="mobile-toggle" onClick={() => setIsOpen((s) => !s)} aria-label="Toggle sidebar" aria-expanded={isOpen}>☰</button>
+            <div className="page-title">Admin</div>
+          </div>
+          <div className="topbar-right">
+            <div className="search" role="search">
+              <label htmlFor="admin-search" className="sr-only">Search admin content</label>
+              <div className="search-input-wrapper">
+                <IconSearch className="search-icon" />
+                <input
+                  id="admin-search"
+                  type="search"
+                  placeholder="Search users, courses, exercises..."
+                  aria-label="Search admin content"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+
+            <div className="topbar-actions" style={{display: 'flex', gap: 12, alignItems: 'center'}}>
+              <div className="notif-wrap" ref={notifRef} style={{position:'relative'}}>
+                <IconButton
+                  label="Notifications"
+                  aria-haspopup="true"
+                  aria-expanded={notifOpen}
+                  onClick={() => setNotifOpen(v => !v)}
+                  className="notification-btn"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                  </svg>
+                  {/* Notification badge */}
+                  <span className="notification-badge">3</span>
+                </IconButton>
+                {notifOpen && (
+                  <div
+                    className="notif-dropdown"
+                    style={{
+                      position:'absolute',
+                      right:0,
+                      top:'100%',
+                      marginTop:8,
+                      width:360,
+                      background:'white',
+                      border:'1px solid #e5e7eb',
+                      borderRadius:12,
+                      boxShadow:'0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                      zIndex:50
+                    }}
+                    role="menu"
+                    aria-label="Notifications menu"
+                  >
+                    <div style={{padding:20, borderBottom:'1px solid #e5e7eb'}}>
+                      <h3 style={{fontSize:16, fontWeight:600, color:'#111827', margin:0}}>Notifications</h3>
+                      <p style={{fontSize:14, color:'#6b7280', margin:'4px 0 0 0'}}>You have 3 unread notifications</p>
+                    </div>
+                    <div style={{maxHeight:400, overflowY:'auto'}}>
+                      {/* Sample notifications */}
+                      <div style={{padding:16, borderBottom:'1px solid #f3f4f6'}} role="menuitem">
+                        <div style={{display: 'flex', alignItems: 'flex-start', gap: 12}}>
+                          <div style={{width: 8, height: 8, borderRadius: '50%', backgroundColor: '#3b82f6', marginTop: 6}}></div>
+                          <div style={{flex: 1}}>
+                            <p style={{fontSize:14, fontWeight:500, color:'#111827', margin:0}}>New user registration</p>
+                            <p style={{fontSize:13, color:'#6b7280', margin:'2px 0 0 0'}}>John Doe joined IELTS platform</p>
+                            <p style={{fontSize:12, color:'#9ca3af', margin:'4px 0 0 0'}}>2 minutes ago</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{padding:16, borderBottom:'1px solid #f3f4f6'}} role="menuitem">
+                        <div style={{display: 'flex', alignItems: 'flex-start', gap: 12}}>
+                          <div style={{width: 8, height: 8, borderRadius: '50%', backgroundColor: '#10b981', marginTop: 6}}></div>
+                          <div style={{flex: 1}}>
+                            <p style={{fontSize:14, fontWeight:500, color:'#111827', margin:0}}>Course completed</p>
+                            <p style={{fontSize:13, color:'#6b7280', margin:'2px 0 0 0'}}>Sarah completed Writing Task 1</p>
+                            <p style={{fontSize:12, color:'#9ca3af', margin:'4px 0 0 0'}}>1 hour ago</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{padding:16}} role="menuitem">
+                        <div style={{display: 'flex', alignItems: 'flex-start', gap: 12}}>
+                          <div style={{width: 8, height: 8, borderRadius: '50%', backgroundColor: '#f59e0b', marginTop: 6}}></div>
+                          <div style={{flex: 1}}>
+                            <p style={{fontSize:14, fontWeight:500, color:'#111827', margin:0}}>System maintenance</p>
+                            <p style={{fontSize:13, color:'#6b7280', margin:'2px 0 0 0'}}>Scheduled maintenance in 2 hours</p>
+                            <p style={{fontSize:12, color:'#9ca3af', margin:'4px 0 0 0'}}>3 hours ago</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{padding:16, borderTop:'1px solid #e5e7eb', textAlign:'center'}}>
+                      <button
+                        style={{
+                          fontSize:14,
+                          color:'#3b82f6',
+                          background:'transparent',
+                          border:'none',
+                          cursor:'pointer',
+                          textDecoration:'underline'
+                        }}
+                        onClick={() => setNotifOpen(false)}
+                      >
+                        View all notifications
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="user-wrap" ref={userRef} style={{position:'relative'}}>
+                <IconButton label="User menu" aria-haspopup="true" aria-expanded={userMenuOpen} onClick={() => setUserMenuOpen(v => !v)}>
+                  <span className="avatar-small" style={{display:'inline-flex',width:32,height:32,alignItems:'center',justifyContent:'center',borderRadius:'50%',background:'var(--sidebar-accent)',color:'#ffffff',fontWeight:700}}>
+                    {user?.fullName ? user.fullName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() : 'AD'}
+                  </span>
+                </IconButton>
+                {userMenuOpen && (
+                  <div className="dropdown-menu" role="menu" aria-label="User menu" style={{position:'absolute', right:0, top:40, minWidth:160, background:'#fff', boxShadow:'0 6px 18px rgba(0,0,0,0.08)', borderRadius:8, padding:8, zIndex:60}}>
+                    <button className="dropdown-item" onClick={() => { setUserMenuOpen(false); navigate('/profile'); }}>Profile</button>
+                    <button className="dropdown-item" onClick={() => { setUserMenuOpen(false); navigate('/settings'); }}>Settings</button>
+                    <div style={{height:1, background:'#eee', margin:'8px 0'}} />
+                    <button className="dropdown-item" onClick={handleLogout}>Logout</button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="p-4 sm:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
+        <main className="content" role="main" aria-label="Main content">
+          <div className="content-inner">
             <Outlet />
           </div>
         </main>
       </div>
     </div>
+      </>
   );
 }

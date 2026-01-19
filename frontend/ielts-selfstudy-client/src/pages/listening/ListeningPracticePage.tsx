@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useExerciseStore, useAuthStore } from "../../stores";
-import { ExercisePlayer } from "../../components/exercises";
+import { useExerciseStore } from "../../stores";
 import { Card, Button } from "../../components/ui";
 
 function ListeningPracticePage() {
@@ -9,72 +8,35 @@ function ListeningPracticePage() {
   const navigate = useNavigate();
   const exerciseId = Number(id);
 
-  const { user } = useAuthStore();
   const {
-    currentExercise,
-    currentQuestions,
-    answers,
-    timeRemaining,
-    isLoading,
-    error,
     fetchExerciseById,
-    updateAnswer,
-    submitExercise,
-    setTimeRemaining
+    error,
   } = useExerciseStore();
 
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [currentExercise, setCurrentExercise] = useState<any | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    if (exerciseId) {
-      fetchExerciseById('Listening', exerciseId);
-    }
+    const load = async () => {
+      if (!exerciseId) return;
+      setLoading(true);
+      try {
+        const ex = await fetchExerciseById(exerciseId);
+        setCurrentExercise(ex);
+      } catch (err) {
+        console.error('Failed to load exercise', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, [exerciseId, fetchExerciseById]);
-
-  // Timer countdown
-  useEffect(() => {
-    if (timeRemaining <= 0 || isSubmitted) return;
-
-    const timer = setInterval(() => {
-      setTimeRemaining(timeRemaining - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeRemaining, isSubmitted, setTimeRemaining]);
-
-  const handleAnswerChange = (questionId: number, answer: string) => {
-    updateAnswer(questionId, answer);
-  };
-
-  const handleSubmit = async () => {
-    if (!currentExercise || !user) return;
-
-    setIsSubmitted(true);
-    setSubmitMessage(null);
-
-    try {
-      await submitExercise(currentExercise.id, answers);
-      setSubmitMessage("Exercise submitted successfully! Your results have been saved.");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to submit exercise";
-      setSubmitMessage(message);
-      setIsSubmitted(false);
-    }
-  };
-
-  const handleTimeUp = () => {
-    if (!isSubmitted) {
-      handleSubmit();
-    }
-  };
 
   const handleBackToList = () => {
     navigate('/listening');
   };
 
-  // Show loading state
-  if (isLoading && !currentExercise) {
+  if (loading) {
     return (
       <div className="max-w-4xl mx-auto">
         <Card>
@@ -87,7 +49,6 @@ function ListeningPracticePage() {
     );
   }
 
-  // Show error state
   if (error && !currentExercise) {
     return (
       <div className="max-w-4xl mx-auto">
@@ -109,91 +70,52 @@ function ListeningPracticePage() {
     );
   }
 
-  // Show exercise player
-  if (currentExercise && currentQuestions.length > 0) {
+  if (!currentExercise) {
     return (
-      <div className="space-y-6">
-        {/* Audio Player Section */}
-        {currentExercise.audioUrl && (
-          <Card>
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Audio</h3>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <audio
-                  controls
-                  className="w-full"
-                  src={currentExercise.audioUrl}
-                >
-                  Your browser does not support the audio element.
-                </audio>
-                {currentExercise.transcript && (
-                  <div className="mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // Toggle transcript visibility - could be enhanced with state
-                        const transcriptEl = document.getElementById('transcript');
-                        if (transcriptEl) {
-                          transcriptEl.classList.toggle('hidden');
-                        }
-                      }}
-                    >
-                      Show/Hide Transcript
-                    </Button>
-                    <div id="transcript" className="mt-2 p-3 bg-white rounded border text-sm text-gray-700 hidden">
-                      {currentExercise.transcript}
-                    </div>
-                  </div>
-                )}
-              </div>
+      <div className="max-w-4xl mx-auto">
+        <Card>
+          <div className="p-8 text-center">
+            <p className="text-gray-600">Exercise not found.</p>
+            <div className="mt-4">
+              <Button onClick={handleBackToList}>
+                Back to Exercises
+              </Button>
             </div>
-          </Card>
-        )}
-
-        {/* Exercise Player */}
-        <ExercisePlayer
-          exercise={currentExercise}
-          questions={currentQuestions}
-          answers={answers}
-          timeRemaining={timeRemaining}
-          onAnswerChange={handleAnswerChange}
-          onSubmit={handleSubmit}
-          onTimeUp={handleTimeUp}
-        />
-
-        {/* Submit Message */}
-        {submitMessage && (
-          <Card>
-            <div className="p-6">
-              <div className={`p-4 rounded-md ${submitMessage.includes('successfully') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-                <p className="font-medium">{submitMessage}</p>
-                <div className="mt-3">
-                  <Button onClick={handleBackToList}>
-                    Back to Exercise List
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </Card>
-        )}
+          </div>
+        </Card>
       </div>
     );
   }
 
-  // Fallback
   return (
-    <div className="max-w-4xl mx-auto">
-      <Card>
-        <div className="p-8 text-center">
-          <p className="text-gray-600">Exercise not found.</p>
-          <div className="mt-4">
-            <Button onClick={handleBackToList}>
-              Back to Exercises
-            </Button>
+    <div className="space-y-6">
+      {currentExercise.audioUrl && (
+        <Card>
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Audio</h3>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <audio controls className="w-full" src={currentExercise.audioUrl}>Your browser does not support the audio element.</audio>
+              {currentExercise.transcript && (
+                <div className="mt-4">
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const transcriptEl = document.getElementById('transcript');
+                    if (transcriptEl) transcriptEl.classList.toggle('hidden');
+                  }}>
+                    Show/Hide Transcript
+                  </Button>
+                  <div id="transcript" className="mt-2 p-3 bg-white rounded border text-sm text-gray-700 hidden">
+                    {currentExercise.transcript}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      )}
+
+      <div className="mt-6">
+        <Button onClick={handleBackToList}>Back to exercises</Button>
+      </div>
     </div>
   );
 }

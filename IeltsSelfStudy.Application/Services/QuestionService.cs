@@ -3,6 +3,7 @@ using IeltsSelfStudy.Application.DTOs.Common;
 using IeltsSelfStudy.Application.Interfaces;
 using IeltsSelfStudy.Domain.Entities;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace IeltsSelfStudy.Application.Services;
 
@@ -28,11 +29,30 @@ public class QuestionService : IQuestionService
         var list = await _questionRepo.GetAllAsync();
         _logger.LogInformation("Retrieved {Count} questions", list.Count);
         var activeQuestions = list.Where(x => x.IsActive).ToList();
-        var result = new List<QuestionDto>();
-        foreach (var q in activeQuestions)
+
+        // Batch fetch exercises to avoid N+1
+        var exerciseIds = activeQuestions.Select(q => q.ExerciseId).Distinct().ToList();
+        var exercises = await _exerciseRepo.GetAll()
+            .Where(e => exerciseIds.Contains(e.Id))
+            .ToListAsync();
+        var exerciseById = exercises.ToDictionary(e => e.Id);
+
+        var result = activeQuestions.Select(q => new QuestionDto
         {
-            result.Add(await MapToDtoAsync(q));
-        }
+            Id = q.Id,
+            Skill = exerciseById.TryGetValue(q.ExerciseId, out var ex) ? ex.Type : "Unknown",
+            ExerciseId = q.ExerciseId,
+            ExerciseTitle = exerciseById.TryGetValue(q.ExerciseId, out var ex2) ? ex2.Title : string.Empty,
+            QuestionNumber = q.QuestionNumber,
+            QuestionText = q.QuestionText,
+            QuestionType = q.QuestionType,
+            CorrectAnswer = q.CorrectAnswer,
+            Points = q.Points,
+            OptionsJson = q.OptionsJson,
+            IsActive = q.IsActive,
+            CreatedAt = q.CreatedAt
+        }).ToList();
+
         return result;
     }
 
@@ -47,11 +67,28 @@ public class QuestionService : IQuestionService
             orderBy: q => q.OrderByDescending(q => q.CreatedAt)
         );
 
-        var dtos = new List<QuestionDto>();
-        foreach (var item in items)
+        // Batch fetch exercises to avoid N+1
+        var exerciseIds = items.Select(i => i.ExerciseId).Distinct().ToList();
+        var exercises = await _exerciseRepo.GetAll()
+            .Where(e => exerciseIds.Contains(e.Id))
+            .ToListAsync();
+        var exerciseById = exercises.ToDictionary(e => e.Id);
+
+        var dtos = items.Select(item => new QuestionDto
         {
-            dtos.Add(await MapToDtoAsync(item));
-        }
+            Id = item.Id,
+            Skill = exerciseById.TryGetValue(item.ExerciseId, out var ex) ? ex.Type : "Unknown",
+            ExerciseId = item.ExerciseId,
+            ExerciseTitle = exerciseById.TryGetValue(item.ExerciseId, out var ex2) ? ex2.Title : string.Empty,
+            QuestionNumber = item.QuestionNumber,
+            QuestionText = item.QuestionText,
+            QuestionType = item.QuestionType,
+            CorrectAnswer = item.CorrectAnswer,
+            Points = item.Points,
+            OptionsJson = item.OptionsJson,
+            IsActive = item.IsActive,
+            CreatedAt = item.CreatedAt
+        }).ToList();
 
         _logger.LogInformation("Retrieved {Count} questions (Page {PageNumber}/{TotalPages})",
             dtos.Count, request.PageNumber, (int)Math.Ceiling(totalCount / (double)request.PageSize));
@@ -69,11 +106,24 @@ public class QuestionService : IQuestionService
             .OrderBy(q => q.QuestionNumber)
             .ToList();
 
-        var result = new List<QuestionDto>();
-        foreach (var q in orderedQuestions)
+        // Get exercise once to fill title/type
+        var exercise = await _exerciseRepo.GetByIdAsync(exerciseId);
+        var result = orderedQuestions.Select(q => new QuestionDto
         {
-            result.Add(await MapToDtoAsync(q));
-        }
+            Id = q.Id,
+            Skill = exercise?.Type ?? "Unknown",
+            ExerciseId = q.ExerciseId,
+            ExerciseTitle = exercise?.Title ?? string.Empty,
+            QuestionNumber = q.QuestionNumber,
+            QuestionText = q.QuestionText,
+            QuestionType = q.QuestionType,
+            CorrectAnswer = q.CorrectAnswer,
+            Points = q.Points,
+            OptionsJson = q.OptionsJson,
+            IsActive = q.IsActive,
+            CreatedAt = q.CreatedAt
+        }).ToList();
+
         return result;
     }
 
@@ -88,6 +138,20 @@ public class QuestionService : IQuestionService
     public async Task<QuestionDto> CreateAsync(CreateQuestionRequest request)
     {
         _logger.LogInformation("Creating new question for exercise ID: {ExerciseId}", request.ExerciseId);
+        // Validate exercise type: only Listening/Reading can have Questions
+        var exercise = await _exerciseRepo.GetByIdAsync(request.ExerciseId);
+        if (exercise == null)
+        {
+            _logger.LogWarning("Exercise not found: {ExerciseId}", request.ExerciseId);
+            throw new ArgumentException("Exercise not found.");
+        }
+
+        if (exercise.Type != "Listening" && exercise.Type != "Reading")
+        {
+            _logger.LogWarning("Attempted to add question to unsupported exercise type: {Type} (ExerciseId: {ExerciseId})", exercise.Type, request.ExerciseId);
+            throw new InvalidOperationException("Questions can only be added to Listening or Reading exercises.");
+        }
+
         var entity = new Question
         {
             ExerciseId = request.ExerciseId,
@@ -100,9 +164,30 @@ public class QuestionService : IQuestionService
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
+        // Transactional: insert question and update exercise questionCount atomically
+        try
+        {
+            await _questionRepo.ExecuteInTransactionAsync(async () =>
+            {
+                await _questionRepo.AddAsync(entity);
+                await _questionRepo.SaveChangesAsync();
 
-        await _questionRepo.AddAsync(entity);
-        await _questionRepo.SaveChangesAsync();
+                // refresh exercise entity to update counter
+                var exc = await _exerciseRepo.GetByIdAsync(request.ExerciseId);
+                if (exc != null)
+                {
+                    exc.QuestionCount = (exc.QuestionCount <= 0) ? 1 : exc.QuestionCount + 1;
+                    _exerciseRepo.Update(exc);
+                }
+                await _exerciseRepo.SaveChangesAsync();
+            });
+        }
+        catch (DbUpdateException dbEx)
+        {
+            _logger.LogError(dbEx, "DB update failed while creating question for exercise {ExerciseId}", request.ExerciseId);
+            // Convert to friendlier message (duplicate question number) if appropriate
+            throw new InvalidOperationException("Failed to create question. Possible duplicate question number for this exercise.");
+        }
 
         _logger.LogInformation("Question created with ID: {Id}", entity.Id);
         return await MapToDtoAsync(entity);
@@ -117,18 +202,84 @@ public class QuestionService : IQuestionService
             _logger.LogWarning("Question with ID: {Id} not found", id);
             return null;
         }
+        // Validate target exercise type before updating association
+        var targetExercise = await _exerciseRepo.GetByIdAsync(request.ExerciseId);
+        if (targetExercise == null)
+        {
+            _logger.LogWarning("Target exercise not found: {ExerciseId}", request.ExerciseId);
+            throw new ArgumentException("Target exercise not found.");
+        }
+        if (targetExercise.Type != "Listening" && targetExercise.Type != "Reading")
+        {
+            _logger.LogWarning("Attempted to associate question with unsupported exercise type: {Type} (ExerciseId: {ExerciseId})", targetExercise.Type, request.ExerciseId);
+            throw new InvalidOperationException("Questions can only be associated with Listening or Reading exercises.");
+        }
+        var originalExerciseId = entity.ExerciseId;
 
-        entity.ExerciseId = request.ExerciseId;
-        entity.QuestionNumber = request.QuestionNumber;
-        entity.QuestionText = request.QuestionText;
-        entity.QuestionType = request.QuestionType;
-        entity.CorrectAnswer = request.CorrectAnswer;
-        entity.Points = request.Points;
-        entity.OptionsJson = request.OptionsJson;
-        entity.IsActive = request.IsActive;
+        // If association changed, update counts transactionally
+        if (originalExerciseId != request.ExerciseId)
+        {
+            try
+            {
+                await _questionRepo.ExecuteInTransactionAsync(async () =>
+                {
+                    entity.ExerciseId = request.ExerciseId;
+                    entity.QuestionNumber = request.QuestionNumber;
+                    entity.QuestionText = request.QuestionText;
+                    entity.QuestionType = request.QuestionType;
+                    entity.CorrectAnswer = request.CorrectAnswer;
+                    entity.Points = request.Points;
+                    entity.OptionsJson = request.OptionsJson;
+                    entity.IsActive = request.IsActive;
 
-        _questionRepo.Update(entity);
-        await _questionRepo.SaveChangesAsync();
+                    _questionRepo.Update(entity);
+                    await _questionRepo.SaveChangesAsync();
+
+                    var orig = await _exerciseRepo.GetByIdAsync(originalExerciseId);
+                    if (orig != null && orig.QuestionCount > 0)
+                    {
+                        orig.QuestionCount = Math.Max(0, orig.QuestionCount - 1);
+                        _exerciseRepo.Update(orig);
+                        await _exerciseRepo.SaveChangesAsync();
+                    }
+
+                    var dest = await _exerciseRepo.GetByIdAsync(request.ExerciseId);
+                    if (dest != null)
+                    {
+                        dest.QuestionCount = (dest.QuestionCount <= 0) ? 1 : dest.QuestionCount + 1;
+                        _exerciseRepo.Update(dest);
+                        await _exerciseRepo.SaveChangesAsync();
+                    }
+                });
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, "DB update failed while moving question {Id} to exercise {ExerciseId}", id, request.ExerciseId);
+                throw new InvalidOperationException("Failed to move question. Possible duplicate question number in target exercise.");
+            }
+        }
+        else
+        {
+            // same exercise - normal update but catch uniqueness violations
+            try
+            {
+                entity.QuestionNumber = request.QuestionNumber;
+                entity.QuestionText = request.QuestionText;
+                entity.QuestionType = request.QuestionType;
+                entity.CorrectAnswer = request.CorrectAnswer;
+                entity.Points = request.Points;
+                entity.OptionsJson = request.OptionsJson;
+                entity.IsActive = request.IsActive;
+
+                _questionRepo.Update(entity);
+                await _questionRepo.SaveChangesAsync();
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, "DB update failed while updating question {Id}", id);
+                throw new InvalidOperationException("Failed to update question. Possible duplicate question number for this exercise.");
+            }
+        }
 
         _logger.LogInformation("Question with ID: {Id} updated successfully", id);
         return await MapToDtoAsync(entity);
@@ -144,9 +295,21 @@ public class QuestionService : IQuestionService
             return false;
         }
 
-        entity.IsActive = false;
-        _questionRepo.Update(entity);
-        await _questionRepo.SaveChangesAsync();
+        // Transactional: soft-delete question and decrement exercise.questionCount
+        await _questionRepo.ExecuteInTransactionAsync(async () =>
+        {
+            entity.IsActive = false;
+            _questionRepo.Update(entity);
+            await _questionRepo.SaveChangesAsync();
+
+            var exercise = await _exerciseRepo.GetByIdAsync(entity.ExerciseId);
+            if (exercise != null && exercise.QuestionCount > 0)
+            {
+                exercise.QuestionCount = Math.Max(0, exercise.QuestionCount - 1);
+                _exerciseRepo.Update(exercise);
+                await _exerciseRepo.SaveChangesAsync();
+            }
+        });
 
         _logger.LogInformation("Question with ID: {Id} soft deleted successfully", id);
         return true;
@@ -160,6 +323,7 @@ public class QuestionService : IQuestionService
             Id = q.Id,
             Skill = exercise?.Type ?? "Unknown",
             ExerciseId = q.ExerciseId,
+            ExerciseTitle = exercise?.Title ?? string.Empty,
             QuestionNumber = q.QuestionNumber,
             QuestionText = q.QuestionText,
             QuestionType = q.QuestionType,

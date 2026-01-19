@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconBook, IconDocument, IconEdit, IconPlus, IconChart, IconUsers, IconClock } from '../../components/icons';
 
 interface Course {
   id: number;
@@ -130,11 +131,11 @@ export default function AdminCoursesPage() {
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'Writing': return '✍️';
-      case 'Speaking': return '🎤';
-      case 'Listening': return '🎧';
-      case 'Reading': return '📖';
-      default: return '📚';
+      case 'Writing': return <IconEdit />;
+      case 'Speaking': return <IconDocument />;
+      case 'Listening': return <IconBook />;
+      case 'Reading': return <IconBook />;
+      default: return <IconBook />;
     }
   };
 
@@ -147,14 +148,14 @@ export default function AdminCoursesPage() {
           <p className="text-gray-600 mt-1">Create and manage IELTS courses</p>
         </div>
         <div className="flex space-x-2">
-          <button
+            <button
             onClick={() => setViewMode(viewMode === 'table' ? 'cards' : 'table')}
             className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
           >
-            {viewMode === 'table' ? '📋 Cards View' : '📊 Table View'}
+            {viewMode === 'table' ? <><IconBook className="mr-2"/> Cards View</> : <><IconChart className="mr-2"/> Table View</>}
           </button>
           <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors">
-            <span className="mr-2">➕</span>
+            <IconPlus className="mr-2" />
             Add New Course
           </button>
         </div>
@@ -362,8 +363,8 @@ export default function AdminCoursesPage() {
                 </p>
 
                 <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                  <span>👥 {course.enrolledStudents} students</span>
-                  <span>⏱️ {course.duration}min</span>
+                  <span className="inline-flex items-center"><IconUsers className="mr-2" />{course.enrolledStudents} students</span>
+                  <span className="inline-flex items-center"><IconClock className="mr-2" />{course.duration}min</span>
                 </div>
 
                 <div className="flex items-center justify-between">

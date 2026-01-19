@@ -30,6 +30,9 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AdminFeedback")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("AiFeedback")
                         .HasColumnType("nvarchar(max)");
 
@@ -39,7 +42,19 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
                     b.Property<int>("ExerciseId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("GradedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GradedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GradingNotes")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("IsPassed")
                         .HasColumnType("bit");
 
                     b.Property<double?>("MaxScore")
@@ -47,6 +62,9 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
 
                     b.Property<double?>("Score")
                         .HasColumnType("float");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("UserAnswerJson")
                         .HasColumnType("nvarchar(max)");
@@ -169,7 +187,7 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<int>("MinWordCount")
+                    b.Property<int?>("MinWordCount")
                         .HasColumnType("int");
 
                     b.Property<string>("Part")
@@ -215,12 +233,6 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Exercises", (string)null);
-
-                    b.HasDiscriminator<string>("Type")
-                        .HasValue("Listening")
-                        .HasValue("Reading")
-                        .HasValue("Writing")
-                        .HasValue("Speaking");
                 });
 
             modelBuilder.Entity("IeltsSelfStudy.Domain.Entities.Question", b =>
@@ -271,7 +283,8 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ExerciseId", "QuestionNumber");
+                    b.HasIndex("ExerciseId", "QuestionNumber")
+                        .IsUnique();
 
                     b.ToTable("Questions", (string)null);
                 });

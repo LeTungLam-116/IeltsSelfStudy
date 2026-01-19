@@ -10,19 +10,14 @@ function ListeningListPage() {
     isLoading,
     error,
     fetchExercises,
-    startExercise
   } = useExerciseStore();
 
   useEffect(() => {
-    fetchExercises('Listening');
+    fetchExercises();
   }, [fetchExercises]);
 
   const handleExerciseStart = (exerciseId: number) => {
-    const exercise = exercises.find(e => e.id === exerciseId);
-    if (exercise) {
-      startExercise(exercise);
-      navigate(`/listening/${exerciseId}`);
-    }
+    navigate(`/listening/${exerciseId}`);
   };
 
   return (

@@ -2,6 +2,8 @@
 using IeltsSelfStudy.Application.DTOs.Common;
 using IeltsSelfStudy.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Dynamic.Core;
+using System.Reflection;
 
 namespace IeltsSelfStudy.Infrastructure.Repositories;
 
@@ -19,6 +21,9 @@ public class GenericRepository<TEntity> : IGenericRepository<TEntity>
 
     public Task<List<TEntity>> GetAllAsync()
         => _dbSet.AsNoTracking().ToListAsync();
+
+    public IQueryable<TEntity> GetAll()
+        => _dbSet.AsQueryable();
 
     public Task<TEntity?> GetByIdAsync(int id)
         => _dbSet.FindAsync(id).AsTask();
@@ -75,6 +80,45 @@ public class GenericRepository<TEntity> : IGenericRepository<TEntity>
         _dbSet.Remove(entity);
     }
 
+    public IOrderedQueryable<TEntity> ApplySorting(IQueryable<TEntity> query, PagedRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.SortBy))
+        {
+            // Default sort by Id descending - using reflection to get property
+            var propertyInfo = typeof(TEntity).GetProperty("Id");
+            if (propertyInfo != null)
+            {
+                return query.OrderByDescending(e => propertyInfo.GetValue(e));
+            }
+            return query.OrderByDescending(e => e); // fallback
+        }
+
+        var sortExpression = request.SortBy;
+        if (!string.IsNullOrWhiteSpace(request.SortDirection) &&
+            request.SortDirection.ToLower() == "desc")
+        {
+            sortExpression += " desc";
+        }
+
+        return query.OrderBy(sortExpression);
+    }
+
     public Task SaveChangesAsync()
         => _context.SaveChangesAsync();
+
+    public async Task ExecuteInTransactionAsync(Func<Task> action)
+    {
+        // Start a transaction and execute the provided delegate
+        await using var tx = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            await action();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+    }
 }

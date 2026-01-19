@@ -139,6 +139,8 @@ try
     app.UseGlobalExceptionHandler();
     app.UseAuthentication();
     app.UseAuthorization();
+    // Serve static files from wwwroot (for uploaded audio)
+    app.UseStaticFiles();
     app.MapControllers();
 
     Log.Information("IeltsSelfStudy API started successfully on {Environment}", app.Environment.EnvironmentName);
