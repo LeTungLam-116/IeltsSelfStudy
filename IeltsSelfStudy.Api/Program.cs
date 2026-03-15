@@ -2,14 +2,19 @@ using IeltsSelfStudy.Api;
 using IeltsSelfStudy.Api.Configuration;
 using IeltsSelfStudy.Api.Extensions;
 using IeltsSelfStudy.Application;
-using IeltsSelfStudy.Application.Abstractions;
+using IeltsSelfStudy.Application.Interfaces;
 using IeltsSelfStudy.Infrastructure;
+using IeltsSelfStudy.Infrastructure.Services;
 using IeltsSelfStudy.Infrastructure.AI;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
+using IeltsSelfStudy.Infrastructure.Persistence;
+using IeltsSelfStudy.Domain.Entities;
+
 
 // ===== CẤU HÌNH SERILOG TRƯỚC KHI BUILD =====
 Log.Logger = new LoggerConfiguration()
@@ -32,7 +37,9 @@ try
     // Add services
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
-    builder.Services.AddHttpClient<IOpenAiGradingService, OpenAiGradingService>();
+    builder.Services.AddHttpClient<IOpenAiGradingService, OpenAiGradingService>()
+        .AddStandardResilienceHandler();
+    builder.Services.AddScoped<IPlacementTestService, PlacementTestService>();
 
     // Bind JwtSettings
     builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
@@ -66,8 +73,24 @@ try
 
     builder.Services.AddAuthorization();
 
-    // Add Controllers
-    builder.Services.AddControllers();
+    // ===== OUTPUT CACHE =====
+    // Cache phản hồi API trong RAM của server để giảm tải DB.
+    // Khi Admin thay đổi dữ liệu, cache sẽ được xóa chủ động theo Tag (Eviction)
+    builder.Services.AddOutputCache(options =>
+    {
+        // Policy mặc định: cache 5 phút cho tất cả GET requests
+        options.AddBasePolicy(builder =>
+            builder.Expire(TimeSpan.FromMinutes(5))
+                   .Tag("global"));
+    });
+
+    // Add Controllers with JSON options
+    builder.Services.AddControllers()
+        .AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+            options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        });
 
     // Swagger Bearer
     builder.Services.AddEndpointsApiExplorer();
@@ -93,6 +116,9 @@ try
                 Array.Empty<string>()
             }
         });
+        
+        // Enable file upload support
+        // c.OperationFilter<FileUploadOperationFilter>();
     });
 
     // CORS for SPA + Cookie refresh
@@ -117,6 +143,58 @@ try
 
     var app = builder.Build();
 
+    // ===== AUTO-INIT SYSTEM SETTINGS (Helper when EF migrations tool is restricted) =====
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        var context = services.GetRequiredService<IeltsDbContext>();
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        try
+        {
+            // Ensure table exists
+            await context.Database.ExecuteSqlRawAsync(@"
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[SystemSettings]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [SystemSettings] (
+                        [Id] int NOT NULL IDENTITY,
+                        [Key] nvarchar(100) NOT NULL,
+                        [Value] nvarchar(max) NOT NULL,
+                        [Type] nvarchar(50) NOT NULL,
+                        [Group] nvarchar(50) NOT NULL,
+                        [Description] nvarchar(500) NULL,
+                        [UpdatedAt] datetime2 NOT NULL,
+                        CONSTRAINT [PK_SystemSettings] PRIMARY KEY ([Id])
+                    );
+                    CREATE UNIQUE INDEX [IX_SystemSettings_Key] ON [SystemSettings] ([Key]);
+                END");
+
+            // Seed default settings if empty
+            if (!context.SystemSettings.Any())
+            {
+                var now = DateTime.UtcNow;
+                var defaults = new List<SystemSetting>
+                {
+                    new SystemSetting { Key = "AI_Model", Value = "gpt-4o-mini", Type = "Text", Group = "AI", Description = "OpenAI Model Name", UpdatedAt = now },
+                    new SystemSetting { Key = "AI_ApiKey", Value = "", Type = "Password", Group = "AI", Description = "OpenAI API Key", UpdatedAt = now },
+                    new SystemSetting { Key = "AI_Prompt_Writing", Value = "You are an IELTS Writing examiner...", Type = "TextArea", Group = "AI", Description = "System prompt for writing grading", UpdatedAt = now },
+                    new SystemSetting { Key = "AI_Prompt_Speaking", Value = "You are an IELTS Speaking examiner...", Type = "TextArea", Group = "AI", Description = "System prompt for speaking grading", UpdatedAt = now },
+                    new SystemSetting { Key = "Payment_Vnp_TmnCode", Value = "", Type = "Text", Group = "Payment", Description = "VNPay Terminal Code", UpdatedAt = now },
+                    new SystemSetting { Key = "Payment_Vnp_HashSecret", Value = "", Type = "Password", Group = "Payment", Description = "VNPay Hash Secret", UpdatedAt = now },
+                    new SystemSetting { Key = "Payment_Vnp_BaseUrl", Value = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html", Type = "Text", Group = "Payment", Description = "VNPay Base URL", UpdatedAt = now },
+                    new SystemSetting { Key = "Payment_Vnp_ReturnUrl", Value = "http://localhost:5173/payment-callback", Type = "Text", Group = "Payment", Description = "VNPay Return URL", UpdatedAt = now }
+                };
+                context.SystemSettings.AddRange(defaults);
+                await context.SaveChangesAsync();
+                logger.LogInformation("Seeded default system settings.");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred while initializing the database.");
+        }
+    }
+
+
     // ===== THÊM MIDDLEWARE SERILOG REQUEST LOGGING =====
     app.UseSerilogRequestLogging(options =>
     {
@@ -136,6 +214,7 @@ try
 
     app.UseHttpsRedirection();
     app.UseCors("AllowFrontend");
+    app.UseOutputCache(); // Kích hoạt Output Cache Middleware
     app.UseGlobalExceptionHandler();
     app.UseAuthentication();
     app.UseAuthorization();

@@ -24,13 +24,17 @@ public class Exercise
     public string? PassageText { get; set; }
 
     // Writing-specific fields (nullable)
-    public string? TaskType { get; set; }
+    public string? TaskType { get; set; }    // "Task1" (Graph/Chart/Map) or "Task2" (Essay)
+    public string? ChartType { get; set; }   // "LineGraph", "BarChart", "PieChart", "Table", "Map", "Process"
+    public string? EssayType { get; set; }   // "Opinion", "Discussion", "ProblemSolution", "TwoPart", "Advantages"
     public string? Topic { get; set; }
     public int? MinWordCount { get; set; }
     public string? SampleAnswer { get; set; }
+    public string? ImageUrl { get; set; }    // For Task 1: Line Graph, Bar Chart, Pie Chart, Map, etc.
 
     // Speaking-specific fields (nullable)
     public string? Part { get; set; }
     public string? Question { get; set; }
+    public string? CueCardJson { get; set; } // Part 2 cue card with bullet points (JSON)
     public string? Tips { get; set; }
 }

@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS Self Study - Login</title>
+    <script src="/_sdk/element_sdk.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .animated-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .form-container {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .form-input {
+            transition: all 0.3s ease;
+            border: 2px solid #e5e7eb;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .form-input:focus+.input-icon {
+            color: #667eea;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -8px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .link-accent {
+            color: #667eea;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .link-accent::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #667eea;
+            transition: width 0.3s ease;
+        }
+
+        .link-accent:hover::after {
+            width: 100%;
+        }
+
+        .logo-bounce {
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .slide-in {
+            animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.25);
+            display: none;
+            z-index: 1000;
+            animation: slideInRight 0.4s ease;
+            max-width: 400px;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.show {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .notification.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .notification.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .form-fade-out {
+            animation: fadeOut 0.3s ease forwards;
+        }
+
+        .form-fade-in {
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+    <style>
+        @view-transition {
+            navigation: auto;
+        }
+    </style>
+    <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+</head>
+
+<body class="h-full w-full animated-gradient overflow-auto">
+    <div id="notification" class="notification"></div>
+    <div class="min-h-full w-full flex items-center justify-center px-4 py-8 sm:py-12">
+        <div class="form-container bg-white rounded-3xl shadow-2xl p-6 sm:p-10 md:p-12 w-full max-w-md slide-in">
+            <!-- Logo and Branding -->
+            <div class="text-center mb-8">
+                <div class="logo-bounce inline-block mb-4">
+                    <svg width="72" height="72" viewbox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="72" height="72" rx="20" fill="url(#logo-gradient)" />
+                        <path d="M36 20L52 32V52C52 54.2091 50.2091 56 48 56H24C21.7909 56 20 54.2091 20 52V32L36 20Z"
+                            fill="white" opacity="0.9" />
+                        <path d="M28 40H32V50H28V40Z" fill="#667eea" />
+                        <path d="M36 36H40V50H36V36Z" fill="#764ba2" />
+                        <path d="M44 42H48V50H44V42Z" fill="#667eea" />
+                        <defs>
+                            <lineargradient id="logo-gradient" x1="0" y1="0" x2="72" y2="72">
+                                <stop offset="0%" stop-color="#667eea" />
+                                <stop offset="100%" stop-color="#764ba2" />
+                            </lineargradient>
+                        </defs>
+                    </svg>
+                </div>
+                <h1 id="website-name" class="text-3xl sm:text-4xl font-bold mb-2 text-gray-900">IELTS Self Study</h1>
+                <p id="tagline" class="text-gray-600 text-sm sm:text-base">Your path to IELTS success</p>
+            </div><!-- Login Form -->
+            <div id="loginForm" class="slide-in">
+                <h2 id="login-title" class="text-2xl font-bold mb-6 text-gray-800">Welcome Back</h2>
+                <form onsubmit="handleLogin(event)">
+                    <div class="mb-5"><label for="login-email"
+                            class="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+                        <div class="input-group"><input type="email" id="login-email" required
+                                class="form-input w-full px-4 py-3.5 rounded-xl text-gray-900 font-medium"
+                                placeholder="you@example.com">
+                        </div>
+                    </div>
+                    <div class="mb-4"><label for="login-password"
+                            class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                        <div class="input-group"><input type="password" id="login-password" required minlength="6"
+                                class="form-input w-full px-4 py-3.5 rounded-xl text-gray-900 font-medium"
+                                placeholder="Enter your password">
+                        </div>
+                    </div>
+                    <div class="mb-6 text-right"><a href="#" id="forgot-link" class="link-accent text-sm font-semibold"
+                            onclick="handleForgotPassword(event)">Forgot password?</a>
+                    </div><button type="submit" id="login-btn"
+                        class="btn-primary w-full py-3.5 rounded-xl font-bold text-white text-base shadow-lg"> Sign In
+                    </button>
+                </form>
+                <div class="mt-8 text-center">
+                    <p class="text-gray-600 text-sm">Don't have an account? <a href="#"
+                            class="link-accent font-bold ml-1" onclick="switchToRegister(event)">Create one now</a></p>
+                </div>
+            </div><!-- Register Form -->
+            <div id="registerForm" class="hidden">
+                <h2 id="register-title" class="text-2xl font-bold mb-6 text-gray-800">Start Your Journey</h2>
+                <form onsubmit="handleRegister(event)">
+                    <div class="mb-5"><label for="register-name"
+                            class="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+                        <div class="input-group"><input type="text" id="register-name" required
+                                class="form-input w-full px-4 py-3.5 rounded-xl text-gray-900 font-medium"
+                                placeholder="John Doe">
+                        </div>
+                    </div>
+                    <div class="mb-5"><label for="register-email"
+                            class="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+                        <div class="input-group"><input type="email" id="register-email" required
+                                class="form-input w-full px-4 py-3.5 rounded-xl text-gray-900 font-medium"
+                                placeholder="you@example.com">
+                        </div>
+                    </div>
+                    <div class="mb-5"><label for="register-password"
+                            class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                        <div class="input-group"><input type="password" id="register-password" required minlength="8"
+                                class="form-input w-full px-4 py-3.5 rounded-xl text-gray-900 font-medium"
+                                placeholder="Create a strong password">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1.5">Must be at least 8 characters</p>
+                    </div>
+                    <div class="mb-6"><label for="register-confirm"
+                            class="block text-sm font-semibold text-gray-700 mb-2">Confirm Password</label>
+                        <div class="input-group"><input type="password" id="register-confirm" required minlength="8"
+                                class="form-input w-full px-4 py-3.5 rounded-xl text-gray-900 font-medium"
+                                placeholder="Confirm your password">
+                        </div>
+                    </div><button type="submit" id="register-btn"
+                        class="btn-primary w-full py-3.5 rounded-xl font-bold text-white text-base shadow-lg"> Create
+                        Account </button>
+                </form>
+                <div class="mt-8 text-center">
+                    <p class="text-gray-600 text-sm">Already have an account? <a href="#"
+                            class="link-accent font-bold ml-1" onclick="switchToLogin(event)">Sign in here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const defaultConfig = {
+            website_name: "IELTS Self Study",
+            tagline: "Your path to IELTS success",
+            login_title: "Welcome Back",
+            register_title: "Start Your Journey",
+            login_button: "Sign In",
+            register_button: "Create Account",
+            forgot_password: "Forgot password?",
+            background_gradient_start: "#667eea",
+            background_gradient_end: "#764ba2",
+            card_background: "#ffffff",
+            text_primary: "#1f2937",
+            accent_color: "#667eea"
+        };
+
+        async function onConfigChange(config) {
+            const websiteName = config.website_name || defaultConfig.website_name;
+            const tagline = config.tagline || defaultConfig.tagline;
+            const loginTitle = config.login_title || defaultConfig.login_title;
+            const registerTitle = config.register_title || defaultConfig.register_title;
+            const loginButton = config.login_button || defaultConfig.login_button;
+            const registerButton = config.register_button || defaultConfig.register_button;
+            const forgotPassword = config.forgot_password || defaultConfig.forgot_password;
+
+            const bgGradientStart = config.background_gradient_start || defaultConfig.background_gradient_start;
+            const bgGradientEnd = config.background_gradient_end || defaultConfig.background_gradient_end;
+            const cardBg = config.card_background || defaultConfig.card_background;
+            const textPrimary = config.text_primary || defaultConfig.text_primary;
+            const accentColor = config.accent_color || defaultConfig.accent_color;
+
+            document.getElementById('website-name').textContent = websiteName;
+            document.getElementById('tagline').textContent = tagline;
+            document.getElementById('login-title').textContent = loginTitle;
+            document.getElementById('register-title').textContent = registerTitle;
+            document.getElementById('login-btn').textContent = loginButton;
+            document.getElementById('register-btn').textContent = registerButton;
+            document.getElementById('forgot-link').textContent = forgotPassword;
+
+            document.body.style.background = `linear-gradient(135deg, ${bgGradientStart} 0%, ${bgGradientEnd} 100%)`;
+            document.querySelector('.form-container').style.background = cardBg;
+
+            const titles = document.querySelectorAll('h1, h2');
+            titles.forEach(title => {
+                title.style.color = textPrimary;
+            });
+
+            const links = document.querySelectorAll('.link-accent');
+            links.forEach(link => {
+                link.style.color = accentColor;
+            });
+
+            const buttons = document.querySelectorAll('.btn-primary');
+            buttons.forEach(btn => {
+                btn.style.background = `linear-gradient(135deg, ${bgGradientStart} 0%, ${bgGradientEnd} 100%)`;
+            });
+
+            const inputs = document.querySelectorAll('.form-input');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function () {
+                    this.style.borderColor = accentColor;
+                    this.style.boxShadow = `0 0 0 4px ${accentColor}1a`;
+                });
+            });
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const icon = type === 'success'
+                ? '<svg width="24" height="24" fill="none" stroke="#10b981" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>'
+                : '<svg width="24" height="24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>';
+
+            notification.innerHTML = `${icon}<span style="color: #1f2937; font-weight: 600;">${message}</span>`;
+            notification.className = `notification ${type} show`;
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3500);
+        }
+
+        function switchToRegister(event) {
+            event.preventDefault();
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+
+            loginForm.classList.add('form-fade-out');
+            setTimeout(() => {
+                loginForm.classList.add('hidden');
+                loginForm.classList.remove('form-fade-out');
+                registerForm.classList.remove('hidden');
+                registerForm.classList.add('form-fade-in');
+            }, 300);
+        }
+
+        function switchToLogin(event) {
+            event.preventDefault();
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+
+            registerForm.classList.add('form-fade-out');
+            setTimeout(() => {
+                registerForm.classList.add('hidden');
+                registerForm.classList.remove('form-fade-out');
+                loginForm.classList.remove('hidden');
+                loginForm.classList.add('form-fade-in');
+            }, 300);
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('login-email').value;
+            showNotification(`Welcome back! Successfully signed in as ${email}`, 'success');
+            event.target.reset();
+        }
+
+        function handleRegister(event) {
+            event.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm').value;
+
+            if (password !== confirmPassword) {
+                showNotification('Passwords do not match. Please try again.', 'error');
+                return;
+            }
+
+            if (password.length < 8) {
+                showNotification('Password must be at least 8 characters long.', 'error');
+                return;
+            }
+
+            showNotification(`Account created successfully! Welcome, ${name}!`, 'success');
+            event.target.reset();
+
+            setTimeout(() => {
+                switchToLogin(new Event('click'));
+            }, 2000);
+        }
+
+        function handleForgotPassword(event) {
+            event.preventDefault();
+            showNotification('Password reset instructions have been sent to your email.', 'success');
+        }
+
+        if (window.elementSdk) {
+            window.elementSdk.init({
+                defaultConfig,
+                onConfigChange,
+                mapToCapabilities: (config) => ({
+                    recolorables: [
+                        {
+                            get: () => config.background_gradient_start || defaultConfig.background_gradient_start,
+                            set: (value) => {
+                                config.background_gradient_start = value;
+                                window.elementSdk.setConfig({ background_gradient_start: value });
+                            }
+                        },
+                        {
+                            get: () => config.background_gradient_end || defaultConfig.background_gradient_end,
+                            set: (value) => {
+                                config.background_gradient_end = value;
+                                window.elementSdk.setConfig({ background_gradient_end: value });
+                            }
+                        },
+                        {
+                            get: () => config.card_background || defaultConfig.card_background,
+                            set: (value) => {
+                                config.card_background = value;
+                                window.elementSdk.setConfig({ card_background: value });
+                            }
+                        },
+                        {
+                            get: () => config.text_primary || defaultConfig.text_primary,
+                            set: (value) => {
+                                config.text_primary = value;
+                                window.elementSdk.setConfig({ text_primary: value });
+                            }
+                        },
+                        {
+                            get: () => config.accent_color || defaultConfig.accent_color,
+                            set: (value) => {
+                                config.accent_color = value;
+                                window.elementSdk.setConfig({ accent_color: value });
+                            }
+                        }
+                    ],
+                    borderables: [],
+                    fontEditable: undefined,
+                    fontSizeable: undefined
+                }),
+                mapToEditPanelValues: (config) => new Map([
+                    ["website_name", config.website_name || defaultConfig.website_name],
+                    ["tagline", config.tagline || defaultConfig.tagline],
+                    ["login_title", config.login_title || defaultConfig.login_title],
+                    ["register_title", config.register_title || defaultConfig.register_title],
+                    ["login_button", config.login_button || defaultConfig.login_button],
+                    ["register_button", config.register_button || defaultConfig.register_button],
+                    ["forgot_password", config.forgot_password || defaultConfig.forgot_password]
+                ])
+            });
+        }
+    </script>
+    <script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'9c1864f3c5241fc8',t:'MTc2OTAxNTEwNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
+</body>
+
+</html>

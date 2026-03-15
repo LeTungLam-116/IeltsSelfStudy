@@ -4,6 +4,7 @@ using IeltsSelfStudy.Application.Interfaces;
 using IeltsSelfStudy.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace IeltsSelfStudy.Application.Services;
 
@@ -313,6 +314,228 @@ public class QuestionService : IQuestionService
 
         _logger.LogInformation("Question with ID: {Id} soft deleted successfully", id);
         return true;
+    }
+
+    public async Task<(int count, string errorMessage)> ImportFromExcelAsync(int exerciseId, System.IO.Stream excelStream)
+    {
+        _logger.LogInformation("Starting Excel import for ExerciseId: {ExerciseId}", exerciseId);
+
+        var exercise = await _exerciseRepo.GetByIdAsync(exerciseId);
+        if (exercise == null)
+            return (0, "Exercise not found.");
+
+        if (exercise.Type != "Listening" && exercise.Type != "Reading")
+            return (0, "Questions can only be imported to Listening or Reading exercises.");
+
+        var questionsToInsert = new List<Question>();
+
+        try
+        {
+            using var workbook = new ClosedXML.Excel.XLWorkbook(excelStream);
+            var worksheet = workbook.Worksheets.FirstOrDefault();
+            if (worksheet == null)
+                return (0, "Excel file is empty or invalid format.");
+
+            var rows = worksheet.RowsUsed().Skip(1); // Skip header row
+            int rowCount = 2; // For error reporting
+
+            foreach (var row in rows)
+            {
+                // Columns: 1:Number, 2:Type, 3:Text, 4:CorrectAnswer, 5:Points, 6:OptionsJson
+                if (row.Cell(1).IsEmpty() && row.Cell(3).IsEmpty())
+                    continue; // Skip completely empty trailing rows
+
+                if (!row.Cell(1).TryGetValue<int>(out var number) || number <= 0)
+                    return (0, $"Invalid Question Number at row {rowCount}. Must be > 0.");
+
+                string type = row.Cell(2).GetString()?.Trim() ?? "MultipleChoice";
+                string text = row.Cell(3).GetString()?.Trim() ?? string.Empty;
+                string correctAnswer = row.Cell(4).GetString()?.Trim() ?? string.Empty;
+                row.Cell(5).TryGetValue<double>(out var points);
+                if (points <= 0) points = 1.0;
+                string optionsJson = row.Cell(6).GetString()?.Trim() ?? string.Empty;
+
+                if (string.IsNullOrEmpty(text))
+                    return (0, $"Question Text is required at row {rowCount}.");
+
+                if (string.IsNullOrEmpty(correctAnswer) && type != "OpenEnded")
+                    return (0, $"Correct Answer is required at row {rowCount}.");
+
+                questionsToInsert.Add(new Question
+                {
+                    ExerciseId = exerciseId,
+                    QuestionNumber = number,
+                    QuestionType = type,
+                    QuestionText = text,
+                    CorrectAnswer = correctAnswer,
+                    Points = points,
+                    OptionsJson = string.IsNullOrEmpty(optionsJson) ? null : optionsJson,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                rowCount++;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to parse Excel for exercise {ExerciseId}", exerciseId);
+            return (0, "Failed to parse Excel file. Ensure it is a valid .xlsx file.");
+        }
+
+        if (questionsToInsert.Count == 0)
+            return (0, "No valid questions found in the Excel file.");
+
+        try
+        {
+            await _questionRepo.ExecuteInTransactionAsync(async () =>
+            {
+                foreach (var q in questionsToInsert)
+                {
+                    await _questionRepo.AddAsync(q);
+                }
+                await _questionRepo.SaveChangesAsync();
+
+                var exc = await _exerciseRepo.GetByIdAsync(exerciseId);
+                if (exc != null)
+                {
+                    exc.QuestionCount = (exc.QuestionCount <= 0) ? questionsToInsert.Count : exc.QuestionCount + questionsToInsert.Count;
+                    _exerciseRepo.Update(exc);
+                }
+                await _exerciseRepo.SaveChangesAsync();
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "DB update failed while importing questions for exercise {ExerciseId}", exerciseId);
+            return (0, "Database error. Possible duplicate Question Numbers or data constraint violations.");
+        }
+
+        _logger.LogInformation("Successfully imported {Count} questions to ExerciseId: {ExerciseId}", questionsToInsert.Count, exerciseId);
+        return (questionsToInsert.Count, string.Empty);
+    }
+
+    public async Task<List<QuestionImportPreviewDto>> PreviewImportFromExcelAsync(int exerciseId, System.IO.Stream excelStream)
+    {
+        var previewList = new List<QuestionImportPreviewDto>();
+        try
+        {
+            using var workbook = new ClosedXML.Excel.XLWorkbook(excelStream);
+            var worksheet = workbook.Worksheets.FirstOrDefault();
+            if (worksheet == null) return previewList;
+
+            var rows = worksheet.RowsUsed().Skip(1);
+            int rowCount = 2; // Keep track for messages
+
+            foreach (var row in rows)
+            {
+                var dto = new QuestionImportPreviewDto();
+                try
+                {
+                    // 1: STT
+                    if (!row.Cell(1).TryGetValue<int>(out var number) || number <= 0)
+                    {
+                        dto.IsValid = false;
+                        dto.ErrorMessage += "Số thứ tự không hợp lệ. ";
+                    }
+                    dto.QuestionNumber = number > 0 ? number : rowCount - 1;
+
+                    // 2: Text
+                    dto.QuestionText = row.Cell(2).GetString()?.Trim() ?? string.Empty;
+                    if (string.IsNullOrEmpty(dto.QuestionText))
+                    {
+                        dto.IsValid = false;
+                        dto.ErrorMessage += "Đề bài không được để trống. ";
+                    }
+
+                    // 3: Type
+                    dto.QuestionType = row.Cell(3).GetString()?.Trim() ?? "MultipleChoice";
+
+                    // Options (4-7)
+                    var options = new List<object>();
+                    var labels = new[] { "A", "B", "C", "D" };
+                    for (int i = 0; i < 4; i++)
+                    {
+                        var optionText = row.Cell(4 + i).GetString()?.Trim();
+                        if (!string.IsNullOrWhiteSpace(optionText))
+                        {
+                            options.Add(new { id = labels[i], text = optionText });
+                        }
+                    }
+                    dto.OptionsJson = options.Count > 0 ? JsonSerializer.Serialize(options) : null;
+
+                    // 8: CorrectAnswer
+                    dto.CorrectAnswer = row.Cell(8).GetString()?.Trim() ?? string.Empty;
+                    if (string.IsNullOrEmpty(dto.CorrectAnswer) && dto.QuestionType != "Essay")
+                    {
+                        dto.IsValid = false;
+                        dto.ErrorMessage += "Đáp án không được để trống. ";
+                    }
+
+                    // 9: Points
+                    row.Cell(9).TryGetValue<double>(out var points);
+                    dto.Points = points > 0 ? points : 1.0;
+                }
+                catch (Exception ex)
+                {
+                    dto.IsValid = false;
+                    dto.ErrorMessage += $"Lỗi khi đọc dòng: {ex.Message}";
+                }
+
+                previewList.Add(dto);
+                rowCount++;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to parse preview excel for exercise {ExerciseId}", exerciseId);
+        }
+        return previewList;
+    }
+
+    public async Task<(int count, string errorMessage)> ConfirmImportAsync(ConfirmImportRequest request)
+    {
+        var validQuestions = request.Questions.Where(q => q.IsValid).ToList();
+        if (!validQuestions.Any()) return (0, "Không có câu hỏi hợp lệ nào để import.");
+
+        var entities = validQuestions.Select(q => new Question
+        {
+            ExerciseId = request.ExerciseId,
+            QuestionNumber = q.QuestionNumber,
+            QuestionText = q.QuestionText,
+            QuestionType = q.QuestionType,
+            CorrectAnswer = q.CorrectAnswer,
+            Points = q.Points,
+            OptionsJson = q.OptionsJson,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        }).ToList();
+
+        try
+        {
+            await _questionRepo.ExecuteInTransactionAsync(async () =>
+            {
+                foreach (var q in entities)
+                {
+                    await _questionRepo.AddAsync(q);
+                }
+                await _questionRepo.SaveChangesAsync();
+
+                var exc = await _exerciseRepo.GetByIdAsync(request.ExerciseId);
+                if (exc != null)
+                {
+                    exc.QuestionCount += entities.Count;
+                    _exerciseRepo.Update(exc);
+                }
+                await _exerciseRepo.SaveChangesAsync();
+            });
+            return (entities.Count, string.Empty);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "DB save failed during import confirm for exercise {ExerciseId}", request.ExerciseId);
+            return (0, "Lỗi khi lưu vào Database, có thể do số thứ tự (STT) câu hỏi bị trùng lặp.");
+        }
     }
 
     private async Task<QuestionDto> MapToDtoAsync(Question q)

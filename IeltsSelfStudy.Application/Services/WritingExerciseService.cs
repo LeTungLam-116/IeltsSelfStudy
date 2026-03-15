@@ -1,7 +1,6 @@
 ﻿using IeltsSelfStudy.Application.DTOs.WritingExercises;
 using IeltsSelfStudy.Application.DTOs.Common;
 using IeltsSelfStudy.Application.DTOs.AI;
-using IeltsSelfStudy.Application.Abstractions;
 using IeltsSelfStudy.Application.Interfaces;
 using IeltsSelfStudy.Domain.Entities;
 using System.Text.Json;
@@ -84,11 +83,14 @@ public class WritingExerciseService : IWritingExerciseService
             Title = request.Title,
             Description = request.Description,
             TaskType = request.TaskType, // TPH: Nullable field
+            ChartType = request.ChartType, // Task 1: LineGraph, BarChart, etc.
+            EssayType = request.EssayType, // Task 2: Opinion, Discussion, etc.
             Question = request.Question,
             Topic = request.Topic,
             Level = request.Level,
             MinWordCount = request.MinWordCount,
             SampleAnswer = request.SampleAnswer,
+            ImageUrl = request.ImageUrl, // Task 1 chart/graph image
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -116,11 +118,14 @@ public class WritingExerciseService : IWritingExerciseService
         entity.Title = request.Title;
         entity.Description = request.Description;
         entity.TaskType = request.TaskType;
+        entity.ChartType = request.ChartType; // Task 1: LineGraph, BarChart, etc.
+        entity.EssayType = request.EssayType; // Task 2: Opinion, Discussion, etc.
         entity.Question = request.Question;
         entity.Topic = request.Topic;
         entity.Level = request.Level;
         entity.MinWordCount = request.MinWordCount;
         entity.SampleAnswer = request.SampleAnswer;
+        entity.ImageUrl = request.ImageUrl; // Task 1 chart/graph image
         entity.IsActive = request.IsActive;
 
         _exerciseRepo.Update(entity); // TPH: Changed from _writingRepo
@@ -277,15 +282,15 @@ public class WritingExerciseService : IWritingExerciseService
         3. **Lexical Resource (LR)**: Vocabulary range and accuracy
         4. **Grammar Range and Accuracy (GRA)**: Grammar usage and accuracy
 
-        Provide:
+        Provide all feedback in Vietnamese EXCEPT for text from the essay itself:
         - An overall band score (0-9)
         - Individual scores for each criterion (TR, CC, LR, GRA)
-        - Strengths of the essay
-        - Areas for improvement
-        - Specific corrections with explanations
-        - A better version example of key sections
+        - Strengths (Điểm mạnh)
+        - Areas for improvement (Cần cải thiện)
+        - Specific corrections: MUST include the 'original' English phrase and the 'corrected' English phrase. ONLY the 'reason' (explanation) should be in Vietnamese.
+        - A better version of key sections (MUST be in English).
 
-        Be constructive and beginner-friendly in your feedback.";
+        Be constructive, polite, and beginner-friendly in your Vietnamese feedback. All explanations and analysis MUST be in Vietnamese. All example English phrases and corrected sentences MUST remain in English.";
 
         return prompt;
     }
@@ -297,11 +302,14 @@ public class WritingExerciseService : IWritingExerciseService
             Title = e.Title,
             Description = e.Description,
             TaskType = e.TaskType, // TPH: Nullable field
+            ChartType = e.ChartType, // Task 1: LineGraph, BarChart, etc.
+            EssayType = e.EssayType, // Task 2: Opinion, Discussion, etc.
             Question = e.Question,
             Topic = e.Topic,
             Level = e.Level,
             MinWordCount = e.MinWordCount ?? 250, // TPH: Default value for nullable
             SampleAnswer = e.SampleAnswer,
+            ImageUrl = e.ImageUrl, // Task 1 chart/graph image
             IsActive = e.IsActive,
             CreatedAt = e.CreatedAt
         };

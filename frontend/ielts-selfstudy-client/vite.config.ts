@@ -25,6 +25,13 @@ export default defineConfig({
     fs: {
       // Allow serving files from one level up to the project root
       allow: ['..']
+    },
+    proxy: {
+      '/uploads': {
+        target: 'https://localhost:7295',
+        changeOrigin: true,
+        secure: false, // For self-signed certificates
+      }
     }
   },
 })

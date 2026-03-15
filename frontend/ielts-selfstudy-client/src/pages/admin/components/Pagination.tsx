@@ -59,7 +59,7 @@ export function Pagination({
       <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
         <div className="flex items-center">
           <p className="text-sm text-gray-700">
-            Showing <span className="font-medium">{totalCount}</span> results
+            Hiển thị <span className="font-medium">{totalCount}</span> kết quả
           </p>
         </div>
       </div>
@@ -75,7 +75,7 @@ export function Pagination({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
         >
-          Previous
+          Trước
         </Button>
         <Button
           variant="outline"
@@ -83,7 +83,7 @@ export function Pagination({
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
         >
-          Next
+          Sau
         </Button>
       </div>
 
@@ -91,7 +91,7 @@ export function Pagination({
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <label htmlFor="page-size" className="text-sm text-gray-700">
-              Show:
+              Hiển thị:
             </label>
             <select
               id="page-size"
@@ -108,9 +108,9 @@ export function Pagination({
           </div>
 
           <p className="text-sm text-gray-700">
-            Showing <span className="font-medium">{startItem}</span> to{' '}
-            <span className="font-medium">{endItem}</span> of{' '}
-            <span className="font-medium">{totalCount}</span> results
+            Hiển thị <span className="font-medium">{startItem}</span> đến{' '}
+            <span className="font-medium">{endItem}</span> trong số{' '}
+            <span className="font-medium">{totalCount}</span> kết quả
           </p>
         </div>
 
@@ -120,12 +120,12 @@ export function Pagination({
             size="sm"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            aria-label="Previous page"
+            aria-label="Trang trước"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Previous
+            Trước
           </Button>
 
           <div className="flex items-center space-x-1">
@@ -139,7 +139,7 @@ export function Pagination({
                     size="sm"
                     onClick={() => onPageChange(page as number)}
                     className="w-8 h-8 p-0"
-                    aria-label={`Page ${page}`}
+                    aria-label={`Trang ${page}`}
                     aria-current={page === currentPage ? 'page' : undefined}
                   >
                     {page}
@@ -154,9 +154,9 @@ export function Pagination({
             size="sm"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            aria-label="Next page"
+            aria-label="Trang sau"
           >
-            Next
+            Sau
             <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>

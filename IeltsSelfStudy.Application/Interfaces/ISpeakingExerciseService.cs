@@ -12,4 +12,5 @@ public interface ISpeakingExerciseService
     Task<SpeakingExerciseDto?> UpdateAsync(int id, UpdateSpeakingExerciseRequest request);
     Task<bool> DeleteAsync(int id);
     Task<EvaluateSpeakingResponse> EvaluateAsync(int speakingExerciseId, EvaluateSpeakingRequest request);
+    Task<EvaluateSpeakingResponse> EvaluateAudioAsync(int speakingExerciseId, Stream audioStream, string fileName, int userId, double? targetBand = null);
 }

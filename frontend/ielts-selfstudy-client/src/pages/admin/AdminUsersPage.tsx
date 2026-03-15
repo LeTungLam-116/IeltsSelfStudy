@@ -47,7 +47,7 @@ export default function AdminUsersPage() {
   }, [pagination?.pageNumber, pagination?.pageSize, filters?.search, filters?.sortBy, filters?.sortDirection, fetchUsers]);
 
   const handleDeleteUser = async (userId: number) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+    if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này không?')) {
       try {
         await deleteUser(userId);
         // Store will automatically update, no need to manually refresh
@@ -73,11 +73,11 @@ export default function AdminUsersPage() {
   const handleBulkDelete = async () => {
     try {
       await bulkDelete(selectedIds);
-      showSuccess('Success', `${selectedIds.length} users deleted successfully`);
+      showSuccess('Thành công', `${selectedIds.length} người dùng đã được xóa`);
       clearSelection();
     } catch (error) {
       console.error('Failed to bulk delete users:', error);
-      showError('Error', 'Failed to delete users. Please try again.');
+      showError('Lỗi', 'Không thể xóa người dùng. Vui lòng thử lại.');
     }
   };
 
@@ -92,7 +92,7 @@ export default function AdminUsersPage() {
       await createUser(userData);
       console.log('AdminUsersPage - createUser success');
       setShowCreateModal(false);
-      showSuccess('Success', 'User created successfully');
+      showSuccess('Thành công', 'Đã tạo người dùng mới');
       // Refresh the user list
       const request: PagedRequest = {
         pageNumber: 1,
@@ -101,7 +101,7 @@ export default function AdminUsersPage() {
       await fetchUsers(request);
     } catch (error) {
       console.error('Failed to create user:', error);
-      showError('Error', 'Failed to create user. Please try again.');
+      showError('Lỗi', 'Không thể tạo người dùng. Vui lòng thử lại.');
     }
   };
 
@@ -111,10 +111,10 @@ export default function AdminUsersPage() {
       await updateUser(userId, userData);
       console.log('AdminUsersPage - updateUser success');
       setEditingUser(null);
-      showSuccess('Success', 'User updated successfully');
+      showSuccess('Thành công', 'Đã cập nhật thông tin người dùng');
     } catch (error) {
       console.error('Failed to update user:', error);
-      showError('Error', 'Failed to update user. Please try again.');
+      showError('Lỗi', 'Không thể cập nhật người dùng. Vui lòng thử lại.');
     }
   };
 
@@ -122,11 +122,11 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600 mt-1">Manage user accounts and permissions</p>
+          <h1 className="text-3xl font-bold text-gray-900">Quản lý người dùng</h1>
+          <p className="text-gray-600 mt-1">Quản lý tài khoản và phân quyền người dùng</p>
         </div>
         <Button onClick={handleAddUserClick}>
-          Add User
+          Thêm người dùng
         </Button>
       </div>
 
@@ -134,7 +134,7 @@ export default function AdminUsersPage() {
       <SearchBar
         value={filters?.search || ''}
         onChange={handleSearch}
-        placeholder="Search users by name or email..."
+        placeholder="Tìm kiếm theo tên hoặc email..."
       />
 
       {/* Bulk Toolbar */}

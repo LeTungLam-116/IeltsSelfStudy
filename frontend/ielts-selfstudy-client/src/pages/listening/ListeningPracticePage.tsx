@@ -1,30 +1,59 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useExerciseStore } from "../../stores";
-import { Card, Button } from "../../components/ui";
+import { useExerciseStore, useAuthStore } from "../../stores";
+import { getQuestionsByExercise } from "../../api/questionsApi";
+import { createAttempt } from "../../api/attemptApi";
+import type { QuestionDto } from "../../types/questions";
+import { Button } from "../../components/ui";
+
+const formatTime = (seconds: number) => {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
 
 function ListeningPracticePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const exerciseId = Number(id);
 
-  const {
-    fetchExerciseById,
-    error,
-  } = useExerciseStore();
+  const { fetchExerciseById } = useExerciseStore();
+  const { user } = useAuthStore();
 
-  const [currentExercise, setCurrentExercise] = useState<any | null>(null);
+  // State
+  const [exercise, setExercise] = useState<any | null>(null);
+  const [questions, setQuestions] = useState<QuestionDto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
+  const [status, setStatus] = useState<'intro' | 'active' | 'finished'>('intro');
+  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes default
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+
+  // Submission
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState<{ score: number; maxScore: number; attemptId?: number } | null>(null);
+  const [showResultOverlay, setShowResultOverlay] = useState(false);
+
+  // Fetch Data
   useEffect(() => {
     const load = async () => {
       if (!exerciseId) return;
       setLoading(true);
       try {
-        const ex = await fetchExerciseById(exerciseId);
-        setCurrentExercise(ex);
-      } catch (err) {
+        const [ex, qs] = await Promise.all([
+          fetchExerciseById(exerciseId),
+          getQuestionsByExercise(exerciseId)
+        ]);
+        setExercise(ex);
+        setQuestions(qs || []);
+
+        if (ex.durationSeconds) {
+          setTimeLeft(ex.durationSeconds);
+        }
+      } catch (err: any) {
         console.error('Failed to load exercise', err);
+        setError(err.message || 'Failed to load exercise');
       } finally {
         setLoading(false);
       }
@@ -32,90 +61,415 @@ function ListeningPracticePage() {
     load();
   }, [exerciseId, fetchExerciseById]);
 
-  const handleBackToList = () => {
-    navigate('/listening');
+  // Timer Logic
+  useEffect(() => {
+    if (status !== 'active') return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          handleSubmit();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [status]);
+
+  const handleStart = () => {
+    setStatus('active');
+  };
+
+  const calculateScore = () => {
+    let score = 0;
+    let maxScore = 0;
+
+    questions.forEach(q => {
+      maxScore += q.points || 1;
+      let userAnswer = answers[q.id];
+
+      // Handle Multiple Choice: Map ID to Text so we compare "Yes" === "Yes" instead of "opt_123" === "Yes"
+      if (q.questionType === 'MultipleChoice' && q.optionsJson) {
+        try {
+          const opts = JSON.parse(q.optionsJson).map((o: any) => ({ ...o, id: o.id || o.label }));
+          const selectedOpt = opts.find((o: any) => o.id?.toString() === userAnswer?.toString());
+          if (selectedOpt) userAnswer = selectedOpt.text;
+        } catch (e) { /* ignore */ }
+      }
+
+      // Simple case-insensitive match
+      if (userAnswer && userAnswer.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase()) {
+        score += q.points || 1;
+      }
+    });
+
+    return { score, maxScore };
+  };
+
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+
+    if (!user) {
+      alert("Authentication error. Please login to submit.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { score, maxScore } = calculateScore();
+
+      // Call API
+      const attempt = await createAttempt({
+        userId: user.id || 1, // Fallback
+        skill: 'Listening',
+        exerciseId: exerciseId,
+        score: score,
+        maxScore: maxScore,
+        userAnswerJson: JSON.stringify(answers)
+      });
+
+      setSubmissionResult({
+        score,
+        maxScore,
+        attemptId: attempt.id
+      });
+
+      setStatus('finished');
+      setShowResultOverlay(true);
+
+    } catch (err) {
+      console.error("Submission failed", err);
+      alert("Failed to submit result. Please check your connection.");
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAnswerChange = (questionId: number, value: string) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: value
+    }));
+  };
+
+  const renderQuestion = (q: QuestionDto, index: number) => {
+    let options: any[] = [];
+    if (q.optionsJson) {
+      try {
+        options = JSON.parse(q.optionsJson).map((o: any) => ({ ...o, id: o.id || o.label }));
+      } catch (e) {
+        console.error("Failed to parse options", e);
+      }
+    }
+
+    const isFinished = status === 'finished';
+
+    let userValForCheck = answers[q.id];
+    // Map ID to Text for comparing with correct answer
+    if (q.questionType === 'MultipleChoice' && options.length > 0) {
+      const selectedOpt = options.find((o) => o.id?.toString() === userValForCheck?.toString());
+      if (selectedOpt) userValForCheck = selectedOpt.text;
+    }
+
+    const isCorrect = isFinished && userValForCheck?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase();
+
+    return (
+      <div key={q.id} className={`mb-6 p-6 rounded-xl shadow-sm border transition-colors ${isFinished
+        ? (isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200')
+        : 'bg-white border-gray-100 hover:border-blue-300'
+        }`}>
+        <div className="flex items-start gap-4">
+          <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center font-bold rounded-full ${isFinished
+            ? (isCorrect ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800')
+            : 'bg-blue-100 text-blue-700'
+            }`}>
+            {index + 1}
+          </div>
+          <div className="flex-grow">
+            <div className="mb-4 text-gray-800 font-medium text-lg leading-relaxed" dangerouslySetInnerHTML={{ __html: q.questionText }} />
+
+            {q.questionType === 'MultipleChoice' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {options.map((opt) => (
+                  <label key={opt.id} className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${isFinished
+                    ? (q.correctAnswer == opt.id?.toString() ? 'bg-green-100 border-green-300' : (answers[q.id] == opt.id?.toString() ? 'bg-red-100 border-red-300' : 'bg-white border-gray-200'))
+                    : (answers[q.id] === opt.id ? 'bg-blue-50 border-blue-500 shadow-md shadow-blue-100' : 'bg-white border-gray-200 hover:bg-gray-50')
+                    }`}>
+                    <input
+                      type="radio"
+                      name={`question-${q.id}`}
+                      value={opt.id}
+                      checked={answers[q.id] == opt.id?.toString()}
+                      onChange={(e) => !isFinished && handleAnswerChange(q.id, e.target.value)}
+                      disabled={isFinished}
+                      className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <span className="text-gray-700">{opt.text}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {(q.questionType === 'TrueFalse' || q.questionType === 'TrueFalseNotGiven') && (
+              <div className="flex gap-6 mt-2">
+                {(q.questionType === 'TrueFalseNotGiven' ? ['True', 'False', 'Not Given'] : ['True', 'False']).map((opt) => (
+                  <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`question-${q.id}`}
+                      value={opt}
+                      checked={answers[q.id]?.toLowerCase() === opt.toLowerCase()}
+                      onChange={(e) => !isFinished && handleAnswerChange(q.id, e.target.value)}
+                      disabled={isFinished}
+                      className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <span className="text-base font-medium text-gray-700">{opt}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {q.questionType === 'FillBlank' && (
+              <div className="mt-2 text-left">
+                <input
+                  type="text"
+                  className="w-full max-w-md px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-900 disabled:opacity-75 disabled:cursor-not-allowed"
+                  placeholder="Type your answer..."
+                  value={answers[q.id] || ''}
+                  onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                  disabled={isFinished}
+                />
+                {isFinished && !isCorrect && (
+                  <div className="mt-2 text-sm text-green-700 font-medium">
+                    Correct Answer: {q.correctAnswer}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <Card>
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading exercise...</p>
-          </div>
-        </Card>
+      <div className="h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full"></div>
       </div>
     );
   }
 
-  if (error && !currentExercise) {
+  if (error || !exercise) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <Card>
-          <div className="p-8 text-center">
-            <div className="text-red-500 mb-4">
-              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Exercise</h3>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <Button onClick={handleBackToList}>
-              Back to Exercises
-            </Button>
-          </div>
-        </Card>
+      <div className="max-w-xl mx-auto mt-20 text-center">
+        <h3 className="text-xl font-bold text-red-600 mb-2">Error</h3>
+        <p className="text-gray-600 mb-6">{error || 'Exercise not found'}</p>
+        <Button onClick={() => navigate('/listening/list')}>Back to List</Button>
       </div>
     );
   }
 
-  if (!currentExercise) {
+  // INTRO SCREEN
+  if (status === 'intro') {
     return (
-      <div className="max-w-4xl mx-auto">
-        <Card>
-          <div className="p-8 text-center">
-            <p className="text-gray-600">Exercise not found.</p>
-            <div className="mt-4">
-              <Button onClick={handleBackToList}>
-                Back to Exercises
-              </Button>
-            </div>
+      <div className="min-h-screen bg-slate-50 py-12 px-4">
+        <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="bg-blue-600 p-8 text-white text-center">
+            <h1 className="text-3xl font-bold mb-2">{exercise.title}</h1>
+            <p className="opacity-90">IELTS Listening Practice</p>
           </div>
-        </Card>
+          <div className="p-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 text-center">
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <div className="text-2xl font-bold text-blue-600 mb-1">{questions.length}</div>
+                <div className="text-xs text-gray-500 uppercase font-semibold">Questions</div>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <div className="text-2xl font-bold text-blue-600 mb-1">{Math.floor((exercise.durationSeconds || 1800) / 60)}</div>
+                <div className="text-xs text-gray-500 uppercase font-semibold">Minutes</div>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <div className="text-2xl font-bold text-blue-600 mb-1">{exercise.level || 'N/A'}</div>
+                <div className="text-xs text-gray-500 uppercase font-semibold">Level</div>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <div className="text-2xl font-bold text-blue-600 mb-1">Audio</div>
+                <div className="text-xs text-gray-500 uppercase font-semibold">Included</div>
+              </div>
+            </div>
+
+            <div className="prose text-gray-600 mb-8">
+              <h3 className="text-lg font-bold text-gray-900">Instructions:</h3>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>Listen to the audio carefully. It will generally be played only once in a real exam.</li>
+                <li>Answer the questions as you listen.</li>
+                <li>The timer will start when you begin.</li>
+                <li>Ensure your headphones are working properly before starting.</li>
+              </ul>
+            </div>
+
+            {exercise.audioUrl ? (
+              <div className="flex justify-center">
+                <Button size="lg" className="w-full md:w-auto px-12 py-4 text-lg bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200" onClick={handleStart}>
+                  Start Listening Test
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center text-red-500 font-bold bg-red-50 p-4 rounded-lg">
+                Error: No Audio File Found for this exercise.
+              </div>
+            )}
+
+          </div>
+        </div>
       </div>
     );
   }
 
+  // ACTIVE EXAM SCREEN
   return (
-    <div className="space-y-6">
-      {currentExercise.audioUrl && (
-        <Card>
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Audio</h3>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <audio controls className="w-full" src={currentExercise.audioUrl}>Your browser does not support the audio element.</audio>
-              {currentExercise.transcript && (
-                <div className="mt-4">
-                  <Button variant="outline" size="sm" onClick={() => {
-                    const transcriptEl = document.getElementById('transcript');
-                    if (transcriptEl) transcriptEl.classList.toggle('hidden');
-                  }}>
-                    Show/Hide Transcript
-                  </Button>
-                  <div id="transcript" className="mt-2 p-3 bg-white rounded border text-sm text-gray-700 hidden">
-                    {currentExercise.transcript}
-                  </div>
+    <div className="min-h-screen bg-slate-100 flex flex-col relative">
+      {/* Top Sticky Header with Audio and Timer */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-md">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 flex-grow">
+            <h2 className="font-bold text-gray-800 line-clamp-1 hidden md:block w-48">{exercise.title}</h2>
+            {/* Audio Player */}
+            {exercise.audioUrl && (
+              <div className="flex-grow max-w-2xl">
+                <audio
+                  controls
+                  className="w-full h-10"
+                  src={exercise.audioUrl}
+                  controlsList="nodownload" // Optional: deter download
+                >
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+              <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className={`font-mono text-xl font-black ${timeLeft < 180 ? 'text-red-500' : 'text-slate-700'}`}>
+                {formatTime(timeLeft)}
+              </span>
+            </div>
+
+            {status !== 'finished' ? (
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200 shadow-md"
+                onClick={() => {
+                  if (window.confirm("Are you sure you want to finish the listening test?")) {
+                    handleSubmit();
+                  }
+                }}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit'}
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={() => navigate('/listening/list')}>
+                Exit
+              </Button>
+            )}
+
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content - Split Screen handling Transcript in Review */}
+      <div className="flex-grow flex overflow-hidden w-full">
+        {/* Left Side: Transcript (Only if finished) */}
+        {status === 'finished' && (
+          <div className="block w-1/2 flex-shrink-0 h-full overflow-y-auto border-r border-gray-200 bg-white shadow-inner">
+            <div className="p-4 md:p-8 max-w-3xl mx-auto">
+              <h3 className="text-xl font-bold gap-2 text-gray-900 mb-6 sticky top-0 bg-white py-4 border-b z-10 flex items-center">
+                <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                Audio Transcript
+              </h3>
+              <div className="prose prose-base md:prose-lg max-w-none text-gray-800 leading-relaxed font-sans text-justify">
+                {exercise.transcript ? (
+                  exercise.transcript.split('\n').map((para: string, i: number) => (
+                    <p key={i} className="mb-4">{para}</p>
+                  ))
+                ) : (
+                  <p className="text-gray-400 italic">No transcript available for this exercise.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Right Side / Full Width: Questions */}
+        <div className="flex-1 h-full overflow-y-auto bg-slate-50 transition-all">
+          <div className="max-w-4xl mx-auto w-full p-4 md:p-6 pb-20 flex-grow">
+            {/* Show transcript on mobile/tablet if finished - Removed to prevent duplicate on mobile! */}
+
+            <div className="space-y-6">
+              {questions.length > 0 ? (
+                questions.map((q, idx) => renderQuestion(q, idx))
+              ) : (
+                <div className="text-center py-20 text-gray-500">
+                  No questions available for this exercise.
                 </div>
               )}
             </div>
           </div>
-        </Card>
-      )}
-
-      <div className="mt-6">
-        <Button onClick={handleBackToList}>Back to exercises</Button>
+        </div>
       </div>
+
+      {/* Result Modal */}
+      {status === 'finished' && submissionResult && showResultOverlay && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in-up">
+            <button
+              onClick={() => setShowResultOverlay(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+
+            <div className={`p-6 text-white text-center ${(submissionResult.score / submissionResult.maxScore || 0) >= 0.6 ? 'bg-emerald-600' : 'bg-red-500'}`}>
+              <h2 className="text-2xl font-bold mb-1">{(submissionResult.score / submissionResult.maxScore || 0) >= 0.6 ? 'Well Done!' : 'Keep Practicing!'}</h2>
+              <p className="opacity-90">Test Completed</p>
+            </div>
+            <div className="p-8 text-center">
+              <div className="text-5xl font-black text-gray-800 mb-2">
+                {submissionResult.score} <span className="text-2xl text-gray-400 font-normal">/ {submissionResult.maxScore}</span>
+              </div>
+              <p className="text-gray-500 mb-6">Your Score</p>
+
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <div className="text-xl font-bold text-gray-800">{questions.length}</div>
+                  <div className="text-xs text-gray-500">Total Questions</div>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <div className="text-xl font-bold text-gray-800">{Math.round((submissionResult.score / submissionResult.maxScore) * 100) || 0}%</div>
+                  <div className="text-xs text-gray-500">Accuracy</div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <Button onClick={() => setShowResultOverlay(false)} className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3">
+                  Review Answers
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/listening/list')} className="w-full">
+                  Back to List
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

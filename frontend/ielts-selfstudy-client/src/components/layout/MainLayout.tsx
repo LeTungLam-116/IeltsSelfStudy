@@ -52,67 +52,46 @@ export default function MainLayout({ children }: { children: ReactNode }) {
               <span className="hidden sm:block">IELTS Self Study</span>
             </Link>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
-              {isAuthenticated ? (
-                <>
-                  {/* Navigation Links */}
-                  <div className="flex items-center space-x-6">
-                    <Link
-                      to="/dashboard"
-                      className="text-gray-600 hover:text-teal-600 font-medium transition-colors relative group"
-                    >
-                      Bảng điều khiển
-                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-teal-600 transition-all group-hover:w-full"></span>
-                    </Link>
-                    {navItems.map((item) => (
-                      <Link
-                        key={item.to}
-                        to={item.to}
-                        className="text-gray-600 hover:text-teal-600 font-medium transition-colors relative group"
-                      >
-                        {item.label}
-                        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-teal-600 transition-all group-hover:w-full"></span>
-                      </Link>
-                    ))}
-                  </div>
+            {/* Navigation (always visible; responsive layout handled inside) */}
+            <nav className="flex items-center space-x-8">
+              <div className="flex items-center space-x-6">
+                <Link to="/home" className="text-gray-600 hover:text-teal-600 font-medium transition-colors">Trang chủ</Link>
+                <Link to="/courses" className="text-gray-600 hover:text-teal-600 font-medium transition-colors">Khóa học</Link>
 
-                  {/* User Menu */}
+                <div className="relative group">
+                  <button className="text-gray-600 hover:text-teal-600 font-medium transition-colors">Luyện tập ▾</button>
+                  <div className="absolute left-0 mt-2 w-44 bg-white border rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-20">
+                    <Link to="/listening" className="block px-4 py-2 hover:bg-gray-50">Listening</Link>
+                    <Link to="/reading" className="block px-4 py-2 hover:bg-gray-50">Reading</Link>
+                    <Link to="/writing" className="block px-4 py-2 hover:bg-gray-50">Writing</Link>
+                    <Link to="/speaking" className="block px-4 py-2 hover:bg-gray-50">Speaking</Link>
+                  </div>
+                </div>
+
+                {isAuthenticated && (
+                  <Link to="/dashboard" className="text-gray-600 hover:text-teal-600 font-medium transition-colors">Bảng điều khiển</Link>
+                )}
+              </div>
+
+              {/* Right side - auth */}
+              <div className="flex items-center space-x-4">
+                {!isAuthenticated ? (
+                  <>
+                    <Link to="/login" className="text-gray-600 hover:text-teal-600 font-medium transition-colors">Đăng nhập</Link>
+                    <Link to="/register" className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md font-medium transition-colors">Đăng ký</Link>
+                  </>
+                ) : (
                   <div className="flex items-center space-x-4 pl-6 border-l border-gray-200">
                     <div className="flex items-center space-x-2">
                       <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
-                        <span className="text-teal-600 font-semibold text-sm">
-                          {user?.fullName?.charAt(0).toUpperCase() || 'U'}
-                        </span>
+                        <span className="text-teal-600 font-semibold text-sm">{user?.fullName?.charAt(0).toUpperCase() || 'U'}</span>
                       </div>
-                      <span className="text-sm text-gray-700 font-medium">
-                        {user?.fullName}
-                      </span>
+                      <span className="text-sm text-gray-700 font-medium">{user?.fullName}</span>
                     </div>
-                    <button
-                      onClick={handleLogout}
-                      className="text-red-600 hover:text-red-700 text-sm font-medium hover:bg-red-50 px-3 py-1 rounded-md transition-colors"
-                    >
-                      Đăng xuất
-                    </button>
+                    <button onClick={handleLogout} className="text-red-600 hover:text-red-700 text-sm font-medium hover:bg-red-50 px-3 py-1 rounded-md transition-colors">Đăng xuất</button>
                   </div>
-                </>
-              ) : (
-                <div className="flex items-center space-x-4">
-                  <Link
-                    to="/home"
-                    className="text-gray-600 hover:text-teal-600 font-medium transition-colors"
-                  >
-                    Trang chủ
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
-                  >
-                    Đăng nhập
-                  </Link>
-                </div>
-              )}
+                )}
+              </div>
             </nav>
 
             {/* Mobile Menu Button */}
@@ -197,6 +176,26 @@ export default function MainLayout({ children }: { children: ReactNode }) {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Secondary visible nav to guarantee visibility */}
+        <div className="w-full bg-white border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-center space-x-6 py-2">
+              <Link to="/home" className="text-gray-700 hover:text-teal-600 font-medium">Trang chủ</Link>
+              <Link to="/courses" className="text-gray-700 hover:text-teal-600 font-medium">Khóa học</Link>
+              <div className="relative group">
+                <span className="text-gray-700 hover:text-teal-600 font-medium cursor-default">Luyện tập ▾</span>
+                <div className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-44 bg-white border rounded shadow-md opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto z-30">
+                  <Link to="/listening" className="block px-4 py-2 hover:bg-gray-50">Listening</Link>
+                  <Link to="/reading" className="block px-4 py-2 hover:bg-gray-50">Reading</Link>
+                  <Link to="/writing" className="block px-4 py-2 hover:bg-gray-50">Writing</Link>
+                  <Link to="/speaking" className="block px-4 py-2 hover:bg-gray-50">Speaking</Link>
+                </div>
+              </div>
+              {isAuthenticated && <Link to="/dashboard" className="text-gray-700 hover:text-teal-600 font-medium">Bảng điều khiển</Link>}
+            </div>
+          </div>
         </div>
       </header>
 

@@ -17,9 +17,18 @@ public class IeltsDbContext : DbContext
     public DbSet<Question> Questions => Set<Question>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<CourseExercise> CourseExercises => Set<CourseExercise>();
+    public DbSet<PlacementTest> PlacementTests => Set<PlacementTest>();
+    public DbSet<UserLevel> UserLevels => Set<UserLevel>();
+    public DbSet<Transaction> Transactions => Set<Transaction>();
+    public DbSet<UserCourse> UserCourses => Set<UserCourse>();
+    public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<SystemSetting>()
+            .HasIndex(s => s.Key)
+            .IsUnique();
+
         base.OnModelCreating(modelBuilder);
 
         // User config by Fluent API
@@ -54,6 +63,9 @@ public class IeltsDbContext : DbContext
 
             entity.Property(c => c.ShortDescription)
                   .HasMaxLength(500);
+
+            entity.Property(c => c.ThumbnailUrl)
+                  .HasMaxLength(1000);
 
             entity.Property(c => c.Level)
                   .IsRequired()
@@ -101,12 +113,21 @@ public class IeltsDbContext : DbContext
 
             entity.Property(e => e.TaskType)
                   .HasMaxLength(20);
+            
+            entity.Property(e => e.ChartType)
+                  .HasMaxLength(50);
+            
+            entity.Property(e => e.EssayType)
+                  .HasMaxLength(50);
 
             entity.Property(e => e.Topic)
                   .HasMaxLength(100);
 
             entity.Property(e => e.Part)
                   .HasMaxLength(10);
+            
+            entity.Property(e => e.CueCardJson)
+                  .HasColumnType("nvarchar(max)");
         });
 
         // CourseExercise config by Fluent API
@@ -266,6 +287,74 @@ public class IeltsDbContext : DbContext
                   .HasForeignKey(r => r.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
+        
+        // Placement Test Config
+        modelBuilder.Entity<PlacementTest>(entity =>
+        {
+            entity.ToTable("PlacementTests");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Title).IsRequired().HasMaxLength(200);
+            entity.Property(x => x.QuestionsJson).IsRequired().HasColumnType("nvarchar(max)");
+            entity.Property(x => x.CreatedAt).IsRequired();
+        });
 
+        // User Level Config
+        modelBuilder.Entity<UserLevel>(entity =>
+        {
+            entity.ToTable("UserLevels");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.UserId).IsRequired();
+            entity.Property(x => x.RoadmapJson).IsRequired().HasColumnType("nvarchar(max)");
+            entity.Property(x => x.TestedAt).IsRequired();
+            // Relationship
+            entity.HasOne(x => x.User)
+                  .WithMany()
+                  .HasForeignKey(x => x.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Transaction Config
+        modelBuilder.Entity<Transaction>(entity =>
+        {
+            entity.ToTable("Transactions");
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.Amount).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(t => t.Status).IsRequired().HasMaxLength(50);
+            entity.Property(t => t.PaymentMethod).IsRequired().HasMaxLength(50);
+            entity.Property(t => t.TransactionRef).IsRequired().HasMaxLength(100);
+            entity.Property(t => t.OrderDescription).HasMaxLength(500);
+            entity.Property(t => t.CreatedAt).IsRequired();
+
+            entity.HasOne(t => t.User)
+                  .WithMany()
+                  .HasForeignKey(t => t.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(t => t.Course)
+                  .WithMany()
+                  .HasForeignKey(t => t.CourseId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // UserCourse Config
+        modelBuilder.Entity<UserCourse>(entity =>
+        {
+            entity.ToTable("UserCourses");
+            entity.HasKey(uc => uc.Id);
+            entity.Property(uc => uc.Status).IsRequired().HasMaxLength(50);
+            entity.Property(uc => uc.EnrollmentDate).IsRequired();
+
+            entity.HasOne(uc => uc.User)
+                  .WithMany()
+                  .HasForeignKey(uc => uc.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(uc => uc.Course)
+                  .WithMany()
+                  .HasForeignKey(uc => uc.CourseId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(uc => new { uc.UserId, uc.CourseId }).IsUnique();
+        });
     }
 }

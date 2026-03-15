@@ -10,6 +10,7 @@ export interface WritingExerciseDto {
   level: string;
   minWordCount: number;
   sampleAnswer?: string | null;
+  imageUrl?: string | null; // For Task 1 charts/graphs
   isActive: boolean;
   createdAt: string;
 }
@@ -46,7 +47,8 @@ export async function evaluateWriting(
 ): Promise<EvaluateWritingResponse> {
   const res = await httpClient.post<EvaluateWritingResponse>(
     `/writingexercises/${writingExerciseId}/evaluate`,
-    payload
+    payload,
+    { timeout: 60000 }
   );
   return res.data;
 }

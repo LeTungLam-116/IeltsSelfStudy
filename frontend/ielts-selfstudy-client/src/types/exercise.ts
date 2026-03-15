@@ -18,12 +18,16 @@ export interface CreateExerciseFormData {
   durationSeconds?: number;
   passageText?: string;
   taskType?: string;
+  chartType?: string; // For Writing Task 1
+  essayType?: string; // For Writing Task 2
   topic?: string;
   minWordCount?: number;
   sampleAnswer?: string;
   part?: string;
   question?: string;
+  cueCardJson?: string; // For Speaking Part 2
   tips?: string;
+  imageUrl?: string; // For Writing Task 1 (charts, graphs)
 }
 
 export interface UpdateExerciseFormData {
@@ -37,16 +41,20 @@ export interface UpdateExerciseFormData {
   durationSeconds?: number;
   passageText?: string;
   taskType?: string;
+  chartType?: string; // For Writing Task 1
+  essayType?: string; // For Writing Task 2
   topic?: string;
   minWordCount?: number;
   sampleAnswer?: string;
   part?: string;
   question?: string;
+  cueCardJson?: string; // For Speaking Part 2
   tips?: string;
+  imageUrl?: string; // For Writing Task 1 (charts, graphs)
 }
 
 // Additional types for API responses
-export interface ExercisePagedResponse extends PagedResponse<AdminExerciseDto> {}
+export interface ExercisePagedResponse extends PagedResponse<AdminExerciseDto> { }
 
 export interface BulkExerciseOperation {
   operation: 'activate' | 'deactivate' | 'delete';
@@ -68,12 +76,16 @@ export interface Exercise {
   durationSeconds?: number | null;
   passageText?: string | null;
   taskType?: string | null;
+  chartType?: string | null;
+  essayType?: string | null;
   topic?: string | null;
   minWordCount?: number;
   sampleAnswer?: string | null;
   part?: string | null;
   question?: string | null;
+  cueCardJson?: string | null;
   tips?: string | null;
+  imageUrl?: string | null; // For Writing Task 1 (charts, graphs)
 }
 
 export interface AdminExerciseDto {
@@ -93,12 +105,16 @@ export interface AdminExerciseDto {
   durationSeconds?: number | null;
   passageText?: string | null;
   taskType?: string | null;
+  chartType?: string | null;
+  essayType?: string | null;
   topic?: string | null;
   minWordCount?: number;
   sampleAnswer?: string | null;
   part?: string | null;
   question?: string | null;
+  cueCardJson?: string | null;
   tips?: string | null;
+  imageUrl?: string | null; // For Writing Task 1 (charts, graphs)
   // Additional admin fields
   totalAttempts?: number;
 }
@@ -122,6 +138,7 @@ export interface CreateExerciseRequest {
   part?: string;
   question?: string;
   tips?: string;
+  imageUrl?: string; // For Writing Task 1 (charts, graphs)
 }
 
 export interface UpdateExerciseRequest {
@@ -142,6 +159,7 @@ export interface UpdateExerciseRequest {
   part?: string;
   question?: string;
   tips?: string;
+  imageUrl?: string; // For Writing Task 1 (charts, graphs)
 }
 
 export interface ExerciseFilters {
@@ -262,12 +280,16 @@ export const createExerciseSchema = baseExerciseSchema.extend({
   }, z.number().min(1).optional()),
   passageText: z.string().optional(),
   taskType: z.string().optional(),
+  chartType: z.string().optional(),
+  essayType: z.string().optional(),
   topic: z.string().optional(),
   minWordCount: z.number().min(1).optional(),
   sampleAnswer: z.string().optional(),
   part: z.string().optional(),
   question: z.string().optional(),
+  cueCardJson: z.string().optional(),
   tips: z.string().optional(),
+  imageUrl: z.string().max(500).optional(), // For Writing Task 1 (charts, graphs)
 }).superRefine((data, ctx) => {
   // Conditional validation based on exercise type
   if (data.type === 'Listening' || data.type === 'Reading') {
@@ -347,12 +369,16 @@ export const updateExerciseSchema = baseExerciseSchema.extend({
   }, z.number().min(1).optional()),
   passageText: z.string().optional(),
   taskType: z.string().optional(),
+  chartType: z.string().optional(),
+  essayType: z.string().optional(),
   topic: z.string().optional(),
   minWordCount: z.number().min(1).optional(),
   sampleAnswer: z.string().optional(),
   part: z.string().optional(),
   question: z.string().optional(),
+  cueCardJson: z.string().optional(),
   tips: z.string().optional(),
+  imageUrl: z.string().max(500).optional(), // For Writing Task 1 (charts, graphs)
 }).partial();
 
 // Re-export types from other modules for convenience

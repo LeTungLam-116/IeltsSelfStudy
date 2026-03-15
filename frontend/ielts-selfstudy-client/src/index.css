@@ -1,68 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --primary-font: 'Inter', sans-serif;
+  --heading-font: 'Outfit', sans-serif;
+  font-family: var(--primary-font);
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+input,
+textarea,
+button,
+select {
+  font-family: var(--primary-font) !important;
 }
-a:hover {
-  color: #535bf2;
+
+/* Custom variables can be kept if used elsewhere, 
+     but Tailwind classes usually replace these */
+--teal-50: #f0fdfa;
+--teal-600: #0d9488;
+--gray-50: #f9fafb;
+--gray-200: #e5e7eb;
+--gray-700: #374151;
+--gray-900: #111827;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  @apply bg-gray-50 text-gray-900;
+  /* Use Tailwind for body defaults */
+  font-family: var(--primary-font);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+h1,
+h2,
+h3,
+h4,
+.font-outfit {
+  font-family: var(--heading-font);
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.animate-pulse-red {
+  animation: recording-pulse 2s infinite;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.glass-morphism {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* 
+   Keep these fallbacks only if absolutely necessary, 
+   but with Tailwind working, they are largely redundant.
+   I will keep them for safety for now but commented out conflicts.
+*/
+
+/* Fix for Dropdown Hover animations if needed custom */
+.group:hover .group-hover\:opacity-100 {
+  opacity: 1;
+}
+
+.group:hover .group-hover\:visible {
+  visibility: visible;
+}
+
+.group:hover .group-hover\:pointer-events-auto {
+  pointer-events: auto;
+}
+
+.group:hover .group-hover\:translate-y-0 {
+  transform: translateY(0);
 }

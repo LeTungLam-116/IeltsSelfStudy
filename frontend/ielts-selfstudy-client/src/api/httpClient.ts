@@ -12,7 +12,7 @@ const isDevelopment = import.meta.env.DEV;
 
 const httpClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000, // Increased timeout
+  timeout: 60000, // 60s timeout for AI operations
   withCredentials: false,
   headers: {
     'Content-Type': 'application/json',
@@ -25,6 +25,11 @@ httpClient.interceptors.request.use(
     const token = localStorage.getItem('accessToken');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    if (config.data instanceof FormData && config.headers) {
+      delete config.headers['Content-Type'];
+      delete config.headers['content-type'];
     }
 
     // Log requests in development
@@ -68,11 +73,25 @@ httpClient.interceptors.response.use(
         url: originalRequest?.url,
         data: error.response?.data,
         message: error.message,
+        responseBody: error.response?.data,
       });
+      if (error.response?.status === 400) {
+        console.error('❌ 400 Bad Request body:', JSON.stringify(error.response?.data));
+      }
     }
 
     // Handle 401 Unauthorized - Token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // Don't attempt to refresh if we're already trying to login/refresh
+      if (originalRequest.url?.includes('/login') || originalRequest.url?.includes('/refresh')) {
+        return Promise.reject(error);
+      }
+
+      // Don't retry FormData requests (file streams can't be re-read after consumption)
+      if (originalRequest.data instanceof FormData) {
+        return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
 
       const refreshToken = localStorage.getItem('refreshToken');
@@ -101,8 +120,9 @@ httpClient.interceptors.response.use(
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('auth-user');
 
-          // Redirect to login if not already there
-          if (window.location.pathname !== '/login') {
+          // Redirect to login if not already there (avoid reload loop)
+          const currentPath = window.location.pathname.toLowerCase().replace(/\/$/, '');
+          if (currentPath !== '/login') {
             window.location.href = '/login';
           }
 
@@ -114,8 +134,11 @@ httpClient.interceptors.response.use(
     // Handle other error statuses
     if (error.response?.status === 403) {
       // Forbidden - redirect to unauthorized page
-      if (window.location.pathname !== '/unauthorized') {
-        window.location.href = '/unauthorized';
+      // Exception: If we are trying to login, show error inline, don't redirect
+      if (!originalRequest.url?.includes('/login')) {
+        if (window.location.pathname !== '/unauthorized') {
+          window.location.href = '/unauthorized';
+        }
       }
     }
 

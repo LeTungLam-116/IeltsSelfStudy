@@ -30,7 +30,7 @@ export function BulkToolbar({
 
   const handleBulkDelete = () => {
     const confirmed = window.confirm(
-      `Are you sure you want to delete ${selectedCount} item${selectedCount === 1 ? '' : 's'}? This action cannot be undone.`
+      `Bạn có chắc chắn muốn xóa ${selectedCount} mục đã chọn không? Hành động này không thể hoàn tác.`
     );
 
     if (confirmed && onBulkDelete) {
@@ -47,7 +47,7 @@ export function BulkToolbar({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span className="text-sm font-medium text-blue-900">
-              {selectedCount} user{selectedCount === 1 ? '' : 's'} selected
+              Đã chọn {selectedCount}
             </span>
           </div>
         </div>
@@ -60,7 +60,7 @@ export function BulkToolbar({
             disabled={isDeleting || isActivating || isDeactivating}
             className="text-blue-700 border-blue-300 hover:bg-blue-50"
           >
-            Clear Selection
+            Bỏ chọn
           </Button>
 
           {showActivateDeactivate && onBulkActivate && (
@@ -72,7 +72,7 @@ export function BulkToolbar({
               loading={isActivating}
               className="text-green-700 border-green-300 hover:bg-green-50"
             >
-              {isActivating ? 'Activating...' : `Activate ${selectedCount}`}
+              {isActivating ? 'Đang kích hoạt...' : `Kích hoạt ${selectedCount}`}
             </Button>
           )}
 
@@ -85,7 +85,7 @@ export function BulkToolbar({
               loading={isDeactivating}
               className="text-yellow-700 border-yellow-300 hover:bg-yellow-50"
             >
-              {isDeactivating ? 'Deactivating...' : `Deactivate ${selectedCount}`}
+              {isDeactivating ? 'Đang ngưng kích hoạt...' : `Ngưng kích hoạt ${selectedCount}`}
             </Button>
           )}
 
@@ -97,7 +97,7 @@ export function BulkToolbar({
               disabled={isDeleting || isActivating || isDeactivating}
               loading={isDeleting}
             >
-              {isDeleting ? 'Deleting...' : `Delete ${selectedCount}`}
+              {isDeleting ? 'Đang xóa...' : `Xóa ${selectedCount}`}
             </Button>
           )}
         </div>

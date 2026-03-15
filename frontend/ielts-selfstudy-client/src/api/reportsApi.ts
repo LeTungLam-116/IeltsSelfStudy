@@ -13,14 +13,31 @@ export interface TrendReportDto {
   data: TrendDataPoint[];
 }
 
-export async function getOverviewReport(): Promise<OverviewReportDto> {
-  const res = await httpClient.get<OverviewReportDto>('/reports/overview');
+export async function getOverviewReport(startDate?: string, endDate?: string): Promise<OverviewReportDto> {
+  const res = await httpClient.get<OverviewReportDto>('/reports/overview', {
+    params: { startDate, endDate }
+  });
   return res.data;
 }
 
-export async function getReportTrends(metric: string, range: string = '30d'): Promise<TrendReportDto> {
+export async function getReportTrends(metric: string, range: string = '30d', startDate?: string, endDate?: string): Promise<TrendReportDto> {
   const res = await httpClient.get<TrendReportDto>('/reports/trends', {
-    params: { metric, range }
+    params: { metric, range, startDate, endDate }
   });
   return res.data;
+}
+
+export async function downloadRevenueReportCsv(startDate?: string, endDate?: string): Promise<void> {
+  const res = await httpClient.get('/reports/export/revenue', {
+    params: { startDate, endDate },
+    responseType: 'blob'
+  });
+
+  const url = window.URL.createObjectURL(new Blob([res.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `RevenueReport_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }

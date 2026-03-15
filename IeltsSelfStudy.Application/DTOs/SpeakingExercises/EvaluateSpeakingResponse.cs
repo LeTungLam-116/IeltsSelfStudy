@@ -9,4 +9,5 @@ public class EvaluateSpeakingResponse
     public string? Feedback { get; set; }
     public string? Strengths { get; set; }
     public string? Weaknesses { get; set; }
+    public string? UserText { get; set; }
 }

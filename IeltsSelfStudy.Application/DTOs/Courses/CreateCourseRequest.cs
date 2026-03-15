@@ -10,6 +10,7 @@ public class CreateCourseRequest
 
     [MaxLength(500, ErrorMessage = "Mô tả ngắn tối đa 500 ký tự.")]
     public string? ShortDescription { get; set; }
+    public string? ThumbnailUrl { get; set; }
 
     [Required(ErrorMessage = "Level không được để trống.")]
     [MaxLength(50)]

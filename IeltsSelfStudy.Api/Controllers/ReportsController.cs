@@ -16,27 +16,30 @@ public class ReportsController : ControllerBase
         _reportService = reportService;
     }
 
-    // GET: api/reports/overview
+    // GET: api/reports/overview?startDate=...&endDate=...
     [HttpGet("overview")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetOverviewReport()
+    public async Task<IActionResult> GetOverviewReport([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
         try
         {
-            var report = await _reportService.GetOverviewReportAsync();
+            var report = await _reportService.GetOverviewReportAsync(startDate, endDate);
             return Ok(report);
         }
         catch (Exception ex)
         {
-            // Log error here if needed
             return StatusCode(500, new { message = "An error occurred while generating the report." });
         }
     }
 
-    // GET: api/reports/trends?metric=users&range=30d
+    // GET: api/reports/trends?metric=users&range=30d&startDate=...&endDate=...
     [HttpGet("trends")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetTrendsReport([FromQuery] string metric, [FromQuery] string range = "30d")
+    public async Task<IActionResult> GetTrendsReport(
+        [FromQuery] string metric, 
+        [FromQuery] string range = "30d",
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null)
     {
         try
         {
@@ -51,13 +54,29 @@ public class ReportsController : ControllerBase
                 return BadRequest(new { message = $"Invalid metric. Valid options: {string.Join(", ", validMetrics)}" });
             }
 
-            var report = await _reportService.GetTrendsReportAsync(metric, range);
+            var report = await _reportService.GetTrendsReportAsync(metric, range, startDate, endDate);
             return Ok(report);
         }
         catch (Exception ex)
         {
-            // Log error here if needed
             return StatusCode(500, new { message = "An error occurred while generating the trends report." });
+        }
+    }
+
+    // GET: api/reports/export/revenue?startDate=...&endDate=...
+    [HttpGet("export/revenue")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ExportRevenue([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+    {
+        try
+        {
+            var bytes = await _reportService.ExportRevenueToCsvAsync(startDate, endDate);
+            var fileName = $"RevenueReport_{DateTime.Now:yyyyMMdd}.csv";
+            return File(bytes, "text/csv", fileName);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while exporting the report." });
         }
     }
 }

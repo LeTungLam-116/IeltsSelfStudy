@@ -120,6 +120,10 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
                     b.Property<double?>("TargetBand")
                         .HasColumnType("float");
 
+                    b.Property<string>("ThumbnailUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.HasKey("Id");
 
                     b.ToTable("Courses", (string)null);
@@ -169,8 +173,15 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("ChartType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("CueCardJson")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
@@ -178,6 +189,13 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
 
                     b.Property<int?>("DurationSeconds")
                         .HasColumnType("int");
+
+                    b.Property<string>("EssayType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -233,6 +251,37 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Exercises", (string)null);
+                });
+
+            modelBuilder.Entity("IeltsSelfStudy.Domain.Entities.PlacementTest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DurationSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("QuestionsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PlacementTests", (string)null);
                 });
 
             modelBuilder.Entity("IeltsSelfStudy.Domain.Entities.Question", b =>
@@ -326,6 +375,64 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
                     b.ToTable("RefreshTokens", (string)null);
                 });
 
+            modelBuilder.Entity("IeltsSelfStudy.Domain.Entities.Transaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OrderDescription")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ResponseCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TransactionRef")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("VnPayTransactionNo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Transactions", (string)null);
+                });
+
             modelBuilder.Entity("IeltsSelfStudy.Domain.Entities.User", b =>
                 {
                     b.Property<int>("Id")
@@ -369,6 +476,101 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("IeltsSelfStudy.Domain.Entities.UserCourse", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EnrollmentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double?>("ProgressPercentage")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("UserId", "CourseId")
+                        .IsUnique();
+
+                    b.ToTable("UserCourses", (string)null);
+                });
+
+            modelBuilder.Entity("IeltsSelfStudy.Domain.Entities.UserLevel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AiFeedbackJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AnswersJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("GrammarScore")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ListeningScore")
+                        .HasColumnType("float");
+
+                    b.Property<double>("OverallBand")
+                        .HasColumnType("float");
+
+                    b.Property<int?>("PlacementTestId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RoadmapJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SpeakingAudioUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("SpeakingScore")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("TestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("WritingEssay")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("WritingScore")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlacementTestId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserLevels", (string)null);
                 });
 
             modelBuilder.Entity("IeltsSelfStudy.Domain.Entities.Attempt", b =>
@@ -427,6 +629,61 @@ namespace IeltsSelfStudy.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("IeltsSelfStudy.Domain.Entities.Transaction", b =>
+                {
+                    b.HasOne("IeltsSelfStudy.Domain.Entities.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("IeltsSelfStudy.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("IeltsSelfStudy.Domain.Entities.UserCourse", b =>
+                {
+                    b.HasOne("IeltsSelfStudy.Domain.Entities.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IeltsSelfStudy.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("IeltsSelfStudy.Domain.Entities.UserLevel", b =>
+                {
+                    b.HasOne("IeltsSelfStudy.Domain.Entities.PlacementTest", "PlacementTest")
+                        .WithMany()
+                        .HasForeignKey("PlacementTestId");
+
+                    b.HasOne("IeltsSelfStudy.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PlacementTest");
 
                     b.Navigation("User");
                 });

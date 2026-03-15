@@ -11,6 +11,7 @@ export interface Course {
   targetBand?: number | null;
   price?: number | null;
   isActive: boolean;
+  thumbnailUrl?: string | null;
   createdAt: string;
   exercises?: CourseExercise[] | null;
 }
@@ -34,6 +35,7 @@ export interface CreateCourseRequest {
   skill: string;
   targetBand?: number | null;
   price?: number | null;
+  thumbnailUrl?: string | null;
 }
 
 export interface UpdateCourseRequest {
@@ -44,6 +46,7 @@ export interface UpdateCourseRequest {
   targetBand?: number | null;
   price?: number | null;
   isActive: boolean;
+  thumbnailUrl?: string | null;
 }
 
 export interface AddExerciseToCourseRequest {
@@ -53,7 +56,7 @@ export interface AddExerciseToCourseRequest {
 }
 
 // Response types
-export interface PagedCourseResponse extends PagedResponse<Course> {}
+export interface PagedCourseResponse extends PagedResponse<Course> { }
 
 // Form data types for frontend forms
 export interface CourseFormData {
@@ -64,6 +67,7 @@ export interface CourseFormData {
   targetBand?: number;
   price?: number;
   isActive?: boolean;
+  thumbnailUrl?: string;
 }
 
 // Exercise assignment types
@@ -98,4 +102,5 @@ export const courseFormSchema = z.object({
   targetBand: z.union([z.number().min(0).max(9).optional(), z.literal('').transform(() => undefined)]).nullable(),
   price: z.union([z.number().min(0).optional(), z.literal('').transform(() => undefined)]).nullable(),
   isActive: z.boolean().default(true),
+  thumbnailUrl: z.string().url('Trường này phải là một đường dẫn URL hợp lệ').max(1000, 'Link ảnh không được quá 1000 ký tự').optional().or(z.literal('')).nullable(),
 });

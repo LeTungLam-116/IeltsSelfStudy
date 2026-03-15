@@ -1,0 +1,284 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+/* Prevent horizontal scroll globally for this page scope if possible */
+.auth-font-wrapper {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    width: 100%;
+}
+
+.animated-gradient {
+    /* Updated to a clean, light blue background similar to the Home Page's airy feel */
+    background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 15s ease infinite;
+    min-height: 100vh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    /* Ensure no scrollbars trigger from background */
+    overflow-x: hidden;
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.form-container {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: white;
+}
+
+/* Force style for inputs to fix "squashed" look - CRITICAL FIX */
+.form-input {
+    transition: all 0.3s ease;
+    border: 2px solid #e5e7eb;
+    padding: 14px 16px !important;
+    /* Force padding */
+    height: 52px !important;
+    /* Force height */
+    border-radius: 0.75rem !important;
+    /* rounded-xl equivalent */
+    width: 100%;
+    box-sizing: border-box !important;
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+    color: #1e293b !important;
+    /* Slate-800 */
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #0071f9;
+    /* Brand Blue */
+    box-shadow: 0 0 0 4px rgba(0, 113, 249, 0.1);
+    /* Brand Blue Shadow */
+    transform: translateY(-1px);
+}
+
+.form-input::placeholder {
+    color: #94a3b8 !important;
+    /* Slate-400 - Faded hint style */
+    opacity: 1;
+    /* Firefox fix */
+}
+
+.form-input::-webkit-input-placeholder {
+    color: #94a3b8 !important;
+}
+
+/* Fix Autofill background for Chrome */
+.form-input:-webkit-autofill,
+.form-input:-webkit-autofill:hover,
+.form-input:-webkit-autofill:focus,
+.form-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+.btn-primary-gradient {
+    /* Brand Gradient: Blue to Cyan (#0071f9 -> #00b4d8) */
+    background: linear-gradient(135deg, #0071f9 0%, #00b4d8 100%);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    /* Force button styles */
+    padding: 14px 16px !important;
+    height: 52px !important;
+    border-radius: 0.75rem !important;
+    color: white !important;
+    font-weight: 700 !important;
+    border: none;
+    cursor: pointer;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.btn-primary-gradient::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-primary-gradient:hover::before {
+    left: 100%;
+}
+
+.btn-primary-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -8px rgba(0, 113, 249, 0.5);
+    /* Brand Blue Shadow */
+}
+
+.btn-primary-gradient:active {
+    transform: translateY(0);
+}
+
+.btn-primary-gradient:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.link-accent {
+    color: #0071f9;
+    /* Brand Blue */
+    transition: all 0.2s ease;
+    position: relative;
+    text-decoration: none;
+}
+
+.link-accent::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: #0071f9;
+    /* Brand Blue */
+    transition: width 0.3s ease;
+}
+
+.link-accent:hover::after {
+    width: 100%;
+}
+
+.logo-bounce {
+    animation: bounce 2s ease-in-out infinite;
+    display: inline-block;
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+.slide-in {
+    animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-fade-out {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+.form-fade-in {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        transform: translateX(-20px);
+        display: none;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Utility to ensure text colors if Tailwind fails */
+.text-gray-900 {
+    color: #0f172a !important;
+    /* Slate-900 (Darker, sharper) */
+}
+
+.text-gray-800 {
+    color: #1e293b !important;
+    /* Slate-800 */
+}
+
+.text-gray-700 {
+    color: #334155 !important;
+    /* Slate-700 */
+}
+
+.text-gray-600 {
+    color: #475569 !important;
+    /* Slate-600 */
+}
+
+.text-gray-500 {
+    color: #64748b !important;
+    /* Slate-500 */
+}
+
+.font-bold {
+    font-weight: 700 !important;
+}
+
+.font-semibold {
+    font-weight: 600 !important;
+}
+
+.mb-8 {
+    margin-bottom: 2rem !important;
+}
+
+.mb-6 {
+    margin-bottom: 1.5rem !important;
+}
+
+.mb-5 {
+    margin-bottom: 1.25rem !important;
+}
+
+.mb-4 {
+    margin-bottom: 1rem !important;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem !important;
+}
+
+.w-full {
+    width: 100% !important;
+}
+
+.text-center {
+    text-align: center !important;
+}

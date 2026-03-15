@@ -40,6 +40,17 @@ export async function updateCourse(id: number, request: UpdateCourseRequest): Pr
   return res.data;
 }
 
+export async function uploadThumbnail(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await httpClient.post<{ url: string }>('/courses/upload-thumbnail', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return res.data.url;
+}
+
 export async function deleteCourse(id: number): Promise<void> {
   await httpClient.delete(`/courses/${id}`);
 }

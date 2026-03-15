@@ -51,7 +51,18 @@ export function CourseEditorModal({ isOpen, course, onClose, onSave }: CourseEdi
 
       // Load current course exercises from backend (store)
       const courseExercisesFromApi = await useCourseStore.getState().fetchCourseExercises(course.id);
-      setCourseExercises(courseExercisesFromApi || []);
+      const sortedResult = (courseExercisesFromApi || []).sort((a, b) => {
+        if (a.order !== b.order) return a.order - b.order;
+        return (a.lessonNumber || 0) - (b.lessonNumber || 0);
+      });
+      setCourseExercises(sortedResult);
+
+      // Update form default order to be the next one
+      reset({
+        exerciseId: 0,
+        order: sortedResult.length + 1,
+        lessonNumber: undefined
+      });
     } catch (error) {
       console.error('Failed to load course data:', error);
     } finally {
@@ -78,9 +89,23 @@ export function CourseEditorModal({ isOpen, course, onClose, onSave }: CourseEdi
           order: data.order,
           lessonNumber: data.lessonNumber ?? undefined,
         });
+
+        // Manually attach the exercise details so the UI can show title/type/level immediately
+        created.exercise = exercise;
+
         // Append returned object (backend authoritative)
-        setCourseExercises(prev => [...prev, created]);
-        reset();
+        const updatedList = [...courseExercises, created].sort((a, b) => {
+          if (a.order !== b.order) return a.order - b.order;
+          return (a.lessonNumber || 0) - (b.lessonNumber || 0);
+        });
+        setCourseExercises(updatedList);
+
+        // Reset form with next order
+        reset({
+          exerciseId: 0,
+          order: updatedList.length + 1,
+          lessonNumber: undefined
+        });
       } catch (err) {
         console.error('Failed to add exercise to course:', err);
       } finally {
@@ -179,7 +204,10 @@ export function CourseEditorModal({ isOpen, course, onClose, onSave }: CourseEdi
           ) : (
             <div className="space-y-2">
               {courseExercises
-                .sort((a, b) => a.order - b.order)
+                .sort((a, b) => {
+                  if (a.order !== b.order) return a.order - b.order;
+                  return (a.lessonNumber || 0) - (b.lessonNumber || 0);
+                })
                 .map((courseExercise, index) => (
                   <div key={courseExercise.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">

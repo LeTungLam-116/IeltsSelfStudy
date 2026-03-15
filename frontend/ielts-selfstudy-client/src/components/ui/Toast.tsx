@@ -40,7 +40,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = Date.now().toString();
+    const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const newToast: Toast = {
       ...toast,
       id,
@@ -164,7 +164,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
       role="alert"
       aria-live="assertive"
     >
-      <div className="flex items-start">
+      <div className="flex items-start w-full">
         <div className="flex-shrink-0">
           {getIcon()}
         </div>

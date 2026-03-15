@@ -14,7 +14,8 @@ public class Question
     // Nội dung câu hỏi
     public string QuestionText { get; set; } = string.Empty;
 
-    // Loại câu hỏi: MultipleChoice, TrueFalse, FillInBlank, Matching, ...
+    // Loại câu hỏi: MultipleChoice, TrueFalseNotGiven, FillInBlank, Matching, ShortAnswer, 
+    //               FormCompletion, SentenceCompletion, SummaryCompletion
     public string QuestionType { get; set; } = "MultipleChoice";
 
     // Đáp án đúng (có thể là JSON nếu là multiple answers)

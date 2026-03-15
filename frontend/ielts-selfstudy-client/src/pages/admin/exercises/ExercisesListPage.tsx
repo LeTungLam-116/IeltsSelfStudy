@@ -69,31 +69,31 @@ export default function ExercisesListPage() {
   const handleBulkActivate = async () => {
     try {
       await bulkActivate(selectedIds);
-      showSuccess('Success', `${selectedIds.length} exercises activated successfully`);
+      showSuccess('Thành công', `Đã kích hoạt thành công ${selectedIds.length} bài tập`);
     } catch (error) {
       console.error('Failed to bulk activate exercises:', error);
-      showError('Error', 'Failed to activate exercises. Please try again.');
+      showError('Lỗi', 'Không thể kích hoạt bài tập. Vui lòng thử lại.');
     }
   };
 
   const handleBulkDeactivate = async () => {
     try {
       await bulkDeactivate(selectedIds);
-      showSuccess('Success', `${selectedIds.length} exercises deactivated successfully`);
+      showSuccess('Thành công', `Đã ngưng kích hoạt thành công ${selectedIds.length} bài tập`);
     } catch (error) {
       console.error('Failed to bulk deactivate exercises:', error);
-      showError('Error', 'Failed to deactivate exercises. Please try again.');
+      showError('Lỗi', 'Không thể ngưng kích hoạt bài tập. Vui lòng thử lại.');
     }
   };
 
   const handleBulkDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete ${selectedIds.length} exercises? This action cannot be undone.`)) {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa ${selectedIds.length} bài tập đã chọn không? Hành động này không thể hoàn tác.`)) {
       try {
         await bulkDelete(selectedIds);
-        showSuccess('Success', `${selectedIds.length} exercises deleted successfully`);
+        showSuccess('Thành công', `Đã xóa thành công ${selectedIds.length} bài tập`);
       } catch (error) {
         console.error('Failed to bulk delete exercises:', error);
-        showError('Error', 'Failed to delete exercises. Please try again.');
+        showError('Lỗi', 'Không thể xóa bài tập. Vui lòng thử lại.');
       }
     }
   };
@@ -111,13 +111,13 @@ export default function ExercisesListPage() {
   };
 
   const handleDeleteExercise = async (exerciseId: number) => {
-    if (window.confirm('Are you sure you want to delete this exercise? This action cannot be undone.')) {
+    if (window.confirm('Bạn có chắc chắn muốn xóa bài tập này không? Hành động này không thể hoàn tác.')) {
       try {
         await deleteExercise(exerciseId);
-        showSuccess('Success', 'Exercise deleted successfully');
+        showSuccess('Thành công', 'Đã xóa bài tập thành công');
       } catch (error) {
         console.error('Failed to delete exercise:', error);
-        showError('Error', 'Failed to delete exercise. Please try again.');
+        showError('Lỗi', 'Không thể xóa bài tập. Vui lòng thử lại.');
       }
     }
   };
@@ -126,10 +126,10 @@ export default function ExercisesListPage() {
     try {
       await createExercise(exerciseData);
       setShowCreateModal(false);
-      showSuccess('Success', 'Exercise created successfully');
+      showSuccess('Thành công', 'Đã tạo bài tập thành công');
     } catch (error) {
       console.error('Failed to create exercise:', error);
-      showError('Error', 'Failed to create exercise. Please try again.');
+      showError('Lỗi', 'Không thể tạo bài tập. Vui lòng thử lại.');
     }
   };
 
@@ -137,10 +137,10 @@ export default function ExercisesListPage() {
     try {
       await updateExercise(exerciseId, exerciseData);
       setEditingExercise(null);
-      showSuccess('Success', 'Exercise updated successfully');
+      showSuccess('Thành công', 'Đã cập nhật bài tập thành công');
     } catch (error) {
       console.error('Failed to update exercise:', error);
-      showError('Error', 'Failed to update exercise. Please try again.');
+      showError('Lỗi', 'Không thể cập nhật bài tập. Vui lòng thử lại.');
     }
   };
 
@@ -148,11 +148,11 @@ export default function ExercisesListPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Exercise Management</h1>
-          <p className="text-gray-600 mt-1">Create and manage IELTS exercises</p>
+          <h1 className="text-3xl font-bold text-gray-900">Quản lý bài tập</h1>
+          <p className="text-gray-600 mt-1">Tạo và quản lý các bài tập IELTS</p>
         </div>
         <Button onClick={handleAddExerciseClick}>
-          Add Exercise
+          Thêm bài tập
         </Button>
       </div>
 
@@ -160,7 +160,7 @@ export default function ExercisesListPage() {
       <SearchBar
         value={filters?.search || ''}
         onChange={handleSearch}
-        placeholder="Search exercises by title or description..."
+        placeholder="Tìm kiếm bài tập theo tiêu đề hoặc mô tả..."
       />
 
       {/* Bulk Toolbar */}

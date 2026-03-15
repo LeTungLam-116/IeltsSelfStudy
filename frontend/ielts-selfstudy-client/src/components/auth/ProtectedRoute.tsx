@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 
 interface ProtectedRouteProps {
@@ -12,10 +12,12 @@ export default function ProtectedRoute({
   requireAuth = true,
   allowedRoles
 }: ProtectedRouteProps) {
-  const { isAuthenticated, user, isLoading, isInitialized } = useAuthStore();
+  const { isAuthenticated, user, isInitialized } = useAuthStore();
+  const location = useLocation();
 
-  // Show loading while auth state is being initialized
-  if (!isInitialized || isLoading) {
+  // Show loading ONLY while auth state is being initialized
+  // We do NOT want to show loading during login/register actions (isLoading), because that unmounts the form!
+  if (!isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -28,6 +30,14 @@ export default function ProtectedRoute({
 
   // If authentication is required but user is not authenticated
   if (requireAuth && !isAuthenticated) {
+    // Save current location so we can redirect back after login
+    // Don't save if it's just the root or login page
+    if (location.pathname !== '/' && location.pathname !== '/login') {
+      sessionStorage.setItem('postLoginIntent', JSON.stringify({
+        path: location.pathname + location.search,
+        message: 'Vui lòng đăng nhập để tiếp tục tham gia học tập.'
+      }));
+    }
     return <Navigate to="/login" replace />;
   }
 
@@ -40,7 +50,6 @@ export default function ProtectedRoute({
   if (allowedRoles && user) {
     // Case insensitive role check
     const roleMatch = allowedRoles.some(role => role.toLowerCase() === user.role.toLowerCase());
-
     if (!roleMatch) {
       return <Navigate to="/unauthorized" replace />;
     }

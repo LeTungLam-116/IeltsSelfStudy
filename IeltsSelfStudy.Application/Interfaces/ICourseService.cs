@@ -7,10 +7,11 @@ public interface ICourseService
 {
     Task<List<CourseDto>> GetAllAsync();
     Task<PagedResponse<CourseDto>> GetPagedAsync(PagedRequest request);
-    Task<CourseDto?> GetByIdAsync(int id);
+    Task<CourseDto?> GetByIdAsync(int id, int? userId = null);
     Task<CourseDto> CreateAsync(CreateCourseRequest request);
     Task<CourseDto?> UpdateAsync(int id, UpdateCourseRequest request);
     Task<bool> DeleteAsync(int id);
+    Task<List<int>> GetEnrolledCourseIdsAsync(int userId);
 
     // Exercise methods
     Task<CourseExerciseDto> AddExerciseToCourseAsync(int courseId, AddExerciseToCourseRequest request);
