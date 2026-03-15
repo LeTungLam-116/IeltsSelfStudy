@@ -1,2 +1,6 @@
-frontend/** linguist-vendored
+frontend/ielts-selfstudy-client/src/components/** linguist-vendored
+frontend/ielts-selfstudy-client/src/pages/** linguist-vendored
+frontend/ielts-selfstudy-client/src/assets/** linguist-vendored
+frontend/ielts-selfstudy-client/src/styles/** linguist-vendored
+
 docs/** linguist-vendored
