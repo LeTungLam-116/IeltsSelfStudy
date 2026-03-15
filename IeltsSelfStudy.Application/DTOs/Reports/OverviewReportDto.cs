@@ -16,4 +16,11 @@ public class OverviewReportDto
 
     public decimal MonthlyRecurringRevenue { get; set; }
     public decimal RevenueGrowthPercentage { get; set; }
+
+
+
+    public List<RecentTransactionDto> RecentTransactions { get; set; } = new();
+    public Dictionary<string, double> AverageScoresBySkill { get; set; } = new();
+    public List<TopStudentDto> TopStudents { get; set; } = new();
+    public List<DifficultExerciseDto> DifficultExercises { get; set; } = new();
 }

@@ -11,4 +11,6 @@ public class EvaluateSpeakingRequest
     public string AnswerText { get; set; } = string.Empty;
 
     public double? TargetBand { get; set; }
+
+    public string? AudioUrl { get; set; }
 }

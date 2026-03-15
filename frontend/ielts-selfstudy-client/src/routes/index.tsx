@@ -12,14 +12,17 @@ const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
 const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
 const UnauthorizedPage = lazy(() => import("../pages/auth/UnauthorizedPage"));
 const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
-const ReadingHomePage = lazy(() => import("../pages/reading/ReadingHomePage.tsx"));
+const ReadingHomePage = lazy(() => import("../pages/reading/ReadingHomePage"));
 const HomePage = lazy(() => import("../pages/HomePage"));
 const UsersPage = lazy(() => import("../pages/users/UsersPage"));
-const CoursesPage = lazy(() => import("../pages/courses/CoursesPage.tsx"));
-const ListeningListPage = lazy(() => import("../pages/listening/ListeningListPage.tsx"));
-const ListeningPracticePage = lazy(() => import("../pages/listening/ListeningPracticePage.tsx"));
-const WritingPracticePage = lazy(() => import("../pages/writing/WritingPracticePage.tsx"));
-const WritingListPage = lazy(() => import("../pages/writing/WritingListPage.tsx"));
+const UserProfilePage = lazy(() => import("../pages/profile/UserProfilePage"));
+const CoursesPage = lazy(() => import("../pages/courses/CoursesPage"));
+const PlacementTestPage = lazy(() => import("../pages/placement/PlacementTestPage"));
+const TestResultPage = lazy(() => import("../pages/placement/TestResultPage"));
+const ListeningListPage = lazy(() => import("../pages/listening/ListeningListPage"));
+const ListeningPracticePage = lazy(() => import("../pages/listening/ListeningPracticePage"));
+const WritingPracticePage = lazy(() => import("../pages/writing/WritingPracticePage"));
+const WritingListPage = lazy(() => import("../pages/writing/WritingListPage"));
 const WritingHistoryPage = lazy(() => import("../pages/attempts/WritingHistoryPage"));
 const AttemptDetailPage = lazy(() => import("../pages/attempts/AttemptDetailPage"));
 const SpeakingListPage = lazy(() => import("../pages/speaking/SpeakingListPage"));
@@ -27,6 +30,8 @@ const SpeakingPracticePage = lazy(() => import("../pages/speaking/SpeakingPracti
 const SpeakingHistoryPage = lazy(() => import("../pages/attempts/SpeakingHistoryPage"));
 const ReadingListPage = lazy(() => import("../pages/reading/ReadingListPage"));
 const ReadingPracticePage = lazy(() => import("../pages/reading/ReadingPracticePage"));
+const CourseDetailPage = lazy(() => import("../pages/courses/CourseDetailPage"));
+const PaymentReturnPage = lazy(() => import("../pages/payments/PaymentReturnPage"));
 
 // Admin pages (lazy loaded)
 const AdminDashboardPage = lazy(() => import("../pages/admin/AdminDashboardPage"));
@@ -41,6 +46,10 @@ const AttemptsListPage = lazy(() => import("../pages/admin/attempts/AttemptsList
 const AttemptDetailsPage = lazy(() => import("../pages/admin/attempts/AttemptDetailsPage"));
 const AttemptGradingPage = lazy(() => import("../pages/admin/attempts/AttemptGradingPage"));
 const AdminReportsPage = lazy(() => import("../pages/admin/AdminReportsPage"));
+const AdminPlacementTestsPage = lazy(() => import('../pages/admin/placement/AdminPlacementTestsPage'));
+const PlacementHistoryPage = lazy(() => import('../pages/placement/PlacementHistoryPage'));
+const PlacementTestReviewPage = lazy(() => import('../pages/placement/PlacementTestReviewPage'));
+const SettingsPage = lazy(() => import("../pages/admin/SettingsPage"));
 
 export function AppRoutes() {
   const { initializeAuth } = useAuthStore();
@@ -60,159 +69,226 @@ export function AppRoutes() {
         </div>
       }>
         <Routes>
-        {/* Public auth routes */}
-        <Route path="/login" element={
-          <ProtectedRoute requireAuth={false}>
-            <LoginPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/register" element={
-          <ProtectedRoute requireAuth={false}>
-            <RegisterPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          {/* Public auth routes */}
+          <Route path="/login" element={
+            <ProtectedRoute requireAuth={false}>
+              <LoginPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/register" element={
+            <ProtectedRoute requireAuth={false}>
+              <RegisterPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-        {/* Root -> Home (public) */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/home" element={<HomePage />} />
+          {/* Root -> Home (public) */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/home" element={<HomePage />} />
 
-        {/* Admin routes - nested routing */}
-        <Route path="/admin" element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminLayout />
-          </ProtectedRoute>
-        }>
-          <Route path="dashboard" element={<AdminDashboardPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="courses" element={<CoursesListPage />} />
-          <Route path="courses/:id" element={<CourseDetailsPage />} />
-          <Route path="exercises" element={<ExercisesListPage />} />
-          <Route path="exercises/:id" element={<ExerciseDetailsPage />} />
-          <Route path="questions" element={<QuestionsListPage />} />
-          <Route path="questions/:id" element={<QuestionDetailsPage />} />
-          <Route path="attempts" element={<AttemptsListPage />} />
-          <Route path="attempts/:id" element={<AttemptDetailsPage />} />
-          <Route path="attempts/:id/grade" element={<AttemptGradingPage />} />
-          <Route path="reports" element={<AdminReportsPage />} />
-        </Route>
+          {/* Admin routes - nested routing with role check */}
+          <Route path="/admin" element={
+            <ProtectedRoute requireAuth={true} allowedRoles={['Admin']}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }>
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="courses" element={<CoursesListPage />} />
+            <Route path="courses/:id" element={<CourseDetailsPage />} />
+            <Route path="exercises" element={<ExercisesListPage />} />
+            <Route path="exercises/:id" element={<ExerciseDetailsPage />} />
+            <Route path="questions" element={<QuestionsListPage />} />
+            <Route path="questions/:id" element={<QuestionDetailsPage />} />
+            <Route path="attempts" element={<AttemptsListPage />} />
+            <Route path="attempts/:id" element={<AttemptDetailsPage />} />
+            <Route path="attempts/:id/grade" element={<AttemptGradingPage />} />
+            <Route path="reports" element={<AdminReportsPage />} />
+            <Route path="placement-tests" element={<AdminPlacementTestsPage />} />
+            <Route path="placement-test/history" element={<PlacementHistoryPage />} />
+            <Route path="placement-test/history" element={<PlacementHistoryPage />} />
+            <Route path="placement-test/history/:id" element={<PlacementTestReviewPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
 
-        {/* User routes */}
-        <Route path="/dashboard" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
-            <UserLayout>
-              <DashboardPage />
-            </UserLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/reading" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
-            <UserLayout>
-              <ReadingHomePage />
-            </UserLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/users" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
-            <UserLayout>
-              <UsersPage />
-            </UserLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/courses" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
+          {/* User routes */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <DashboardPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <UserProfilePage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* Placement Test */}
+          <Route path="/placement-test" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <PlacementTestPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/placement/result" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <TestResultPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/placement-test/history" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <PlacementHistoryPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/placement-test/history/:id" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <PlacementTestReviewPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/reading" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <ReadingHomePage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/users" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <UsersPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/courses" element={
             <UserLayout>
               <CoursesPage />
             </UserLayout>
-          </ProtectedRoute>
-        } />
+          } />
 
-        {/* Listening routes */}
-        <Route path="/listening" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
-            <UserLayout>
-              <ListeningListPage />
-            </UserLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/listening/:id" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
-            <UserLayout>
+          {/* Listening routes */}
+          <Route path="/listening" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <ListeningListPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/listening/list" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <ListeningListPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/listening/:id" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
               <ListeningPracticePage />
-            </UserLayout>
-          </ProtectedRoute>
-        } />
+            </ProtectedRoute>
+          } />
 
-        {/* Writing routes */}
-        <Route path="/writing" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
-            <UserLayout>
-              <WritingListPage />
-            </UserLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/writing/:id" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
-            <UserLayout>
+          {/* Writing routes */}
+          <Route path="/writing" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <WritingListPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/writing/list" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <WritingListPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/writing/:id" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
               <WritingPracticePage />
-            </UserLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/writing/history" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
-            <UserLayout>
-              <WritingHistoryPage />
-            </UserLayout>
-          </ProtectedRoute>
-        } />
+            </ProtectedRoute>
+          } />
+          <Route path="/writing/history" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <WritingHistoryPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
 
-        {/* Speaking routes */}
-        <Route path="/speaking" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
-            <UserLayout>
-              <SpeakingListPage />
-            </UserLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/speaking/:id" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
-            <UserLayout>
+          {/* Speaking routes */}
+          <Route path="/speaking" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <SpeakingListPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/speaking/list" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <SpeakingListPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/speaking/:id" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
               <SpeakingPracticePage />
-            </UserLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/speaking/history" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
-            <UserLayout>
-              <SpeakingHistoryPage />
-            </UserLayout>
-          </ProtectedRoute>
-        } />
+            </ProtectedRoute>
+          } />
+          <Route path="/speaking/history" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <SpeakingHistoryPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
 
-        {/* Reading routes */}
-        <Route path="/reading/list" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
-            <UserLayout>
-              <ReadingListPage />
-            </UserLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/reading/:id" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
-            <UserLayout>
+          {/* Reading routes */}
+          <Route path="/reading/list" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <ReadingListPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/reading/:id" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
               <ReadingPracticePage />
-            </UserLayout>
-          </ProtectedRoute>
-        } />
+            </ProtectedRoute>
+          } />
 
-        {/* Attempt routes */}
-        <Route path="/attempts/:id" element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
+          <Route path="/courses/:id" element={
             <UserLayout>
-              <AttemptDetailPage />
+              <CourseDetailPage />
             </UserLayout>
-          </ProtectedRoute>
-        } />
+          } />
+
+          <Route path="/payment-return" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <PaymentReturnPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/attempts/:id" element={
+            <ProtectedRoute allowedRoles={['User', 'Student', 'Admin']}>
+              <UserLayout>
+                <AttemptDetailPage />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
         </Routes>
       </Suspense>
     </BrowserRouter>

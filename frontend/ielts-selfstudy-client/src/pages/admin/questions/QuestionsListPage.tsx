@@ -1,8 +1,9 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo, useRef, useMemo } from 'react';
 import { Button, Card, Loading, useToast } from '../../../components/ui';
 import { SearchBar, Pagination } from '../components';
 import { QuestionTable } from './components/QuestionTable';
 import { QuestionFormModal } from './components/QuestionFormModal';
+import { ImportExcelModal } from './components/ImportExcelModal';
 import {
   getQuestions,
   createQuestion,
@@ -40,17 +41,37 @@ const QuestionsListPage = memo(function QuestionsListPage() {
   const [showFiltersOpen, setShowFiltersOpen] = useState<boolean>(false);
   const [localFilters, setLocalFilters] = useState<QuestionFilters>({ search: '' });
 
-  // Keep localFilters in sync when applied filters change
-  useEffect(() => {
-    setLocalFilters(filters);
-  }, [filters]);
-
   const exerciseStore = useExerciseStore();
-  const { fetchExerciseById, exercises } = exerciseStore;
+  const { fetchExerciseById, exercises, fetchExercises } = exerciseStore;
 
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<QuestionDto | null>(null);
+
+  // Ref để đóng filter dropdown khi click ra ngoài
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setShowFiltersOpen(false);
+      }
+    };
+    if (showFiltersOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFiltersOpen]);
+
+  // Fetch initial exercises for filter dropdown
+  useEffect(() => {
+    if (exercises.length === 0) {
+      fetchExercises({ pageNumber: 1, pageSize: 100 });
+    }
+  }, [exercises.length, fetchExercises]);
 
   // Fetch questions when filters/pagination change
   useEffect(() => {
@@ -68,18 +89,20 @@ const QuestionsListPage = memo(function QuestionsListPage() {
 
         // Support both PagedResponse and plain array responses.
         // Some environments (testing, older endpoints) may return a raw array.
+        const rawItems: QuestionDto[] = Array.isArray(response) ? response : (response?.items || []);
+
         if (Array.isArray(response)) {
-          setQuestions(response || []);
+          setQuestions(rawItems);
           setPagination({
             pageNumber: 1,
-            pageSize: response.length || 10,
-            totalCount: response.length || 0,
+            pageSize: rawItems.length || 10,
+            totalCount: rawItems.length || 0,
             totalPages: 1,
             hasNextPage: false,
             hasPreviousPage: false,
           });
         } else {
-          setQuestions(response?.items || []);
+          setQuestions(rawItems);
           setPagination({
             pageNumber: response?.pageNumber || 1,
             pageSize: response?.pageSize || 10,
@@ -91,7 +114,7 @@ const QuestionsListPage = memo(function QuestionsListPage() {
         }
       } catch (err) {
         console.error('Failed to fetch questions:', err);
-        showError('Error', 'Failed to load questions. Please try again.');
+        showError('Lỗi', 'Không thể tải danh sách câu hỏi. Vui lòng thử lại.');
       } finally {
         setIsLoading(false);
       }
@@ -121,7 +144,7 @@ const QuestionsListPage = memo(function QuestionsListPage() {
         ...prev,
         totalCount: prev.totalCount + 1,
       }));
-      showSuccess('Success', 'Question created successfully!');
+      showSuccess('Thành công', 'Đã tạo câu hỏi mới!');
       // Refresh the exercise so questionCount and preview update
       try {
         await fetchExerciseById(data.exerciseId);
@@ -130,7 +153,7 @@ const QuestionsListPage = memo(function QuestionsListPage() {
       }
     } catch (err) {
       console.error('Failed to create question:', err);
-      showError('Error', 'Failed to create question. Please try again.');
+      showError('Lỗi', 'Không thể tạo câu hỏi. Vui lòng thử lại.');
       throw err; // Re-throw to let modal handle error state
     }
   };
@@ -149,16 +172,16 @@ const QuestionsListPage = memo(function QuestionsListPage() {
         prev.map(q => q.id === editingQuestion.id ? updatedQuestion : q)
       );
       setEditingQuestion(null);
-      showSuccess('Success', 'Question updated successfully!');
+      showSuccess('Thành công', 'Đã cập nhật câu hỏi!');
     } catch (err) {
       console.error('Failed to update question:', err);
-      showError('Error', 'Failed to update question. Please try again.');
+      showError('Lỗi', 'Không thể cập nhật câu hỏi. Vui lòng thử lại.');
       throw err; // Re-throw to let modal handle error state
     }
   };
 
   const handleDeleteQuestion = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this question? This action cannot be undone.')) {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa câu hỏi này? Thao tác này không thể hoàn tác.')) {
       return;
     }
 
@@ -178,7 +201,7 @@ const QuestionsListPage = memo(function QuestionsListPage() {
         ...prev,
         totalCount: prev.totalCount - 1,
       }));
-      showSuccess('Success', 'Question deleted successfully!');
+      showSuccess('Thành công', 'Đã xóa câu hỏi!');
 
       if (exerciseIdToRefresh) {
         try {
@@ -189,7 +212,7 @@ const QuestionsListPage = memo(function QuestionsListPage() {
       }
     } catch (err) {
       console.error('Failed to delete question:', err);
-      showError('Error', 'Failed to delete question. Please try again.');
+      showError('Lỗi', 'Không thể xóa câu hỏi. Vui lòng thử lại.');
     }
   };
 
@@ -198,15 +221,25 @@ const QuestionsListPage = memo(function QuestionsListPage() {
     setEditingQuestion(null);
   };
 
+  // Join tên bài tập từ store vào từng câu hỏi — giúp bảng hiển thị "Tên bài tập" rõ ràng thay vì chỉ là ID số
+  const questionsWithTitle = useMemo(() => {
+    if (!exercises || exercises.length === 0) return questions;
+    const exerciseMap = new Map(exercises.map(ex => [ex.id, ex.title]));
+    return questions.map(q => ({
+      ...q,
+      exerciseTitle: exerciseMap.get(q.exerciseId) ?? `Bài tập #${q.exerciseId}`,
+    }));
+  }, [questions, exercises]);
+
   if (isLoading && (!questions || questions.length === 0)) {
-    return <Loading text="Loading questions..." />;
+    return <Loading text="Đang tải danh sách câu hỏi..." />;
   }
 
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold text-gray-900">Questions Management</h1>
-        <p className="text-gray-600 mt-2">Create and manage questions for exercises</p>
+        <h1 className="text-3xl font-bold text-gray-900">Quản lý câu hỏi</h1>
+        <p className="text-gray-600 mt-2">Tạo và quản lý câu hỏi cho các bài tập</p>
       </header>
 
       <Card className="p-6">
@@ -214,31 +247,31 @@ const QuestionsListPage = memo(function QuestionsListPage() {
           <SearchBar
             value={filters.search || ''}
             onChange={handleSearch}
-            placeholder="Search questions..."
+            placeholder="Tìm kiếm câu hỏi..."
           />
 
           <div className="flex gap-2 items-start">
-            <div className="relative">
+            <div className="relative" ref={filterRef}>
               <Button
                 variant="secondary"
                 className="flex items-center"
                 onClick={() => setShowFiltersOpen((s) => !s)}
               >
                 <IconFilter className="w-5 h-5 mr-2" />
-                Filters
+                Bộ lọc
               </Button>
 
               {showFiltersOpen && (
                 <div className="absolute right-0 mt-2 w-80 bg-white border rounded-md shadow-lg p-4 z-50">
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Exercise</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Bài tập</label>
                       <select
-                        value={filters.exerciseId ?? 0}
+                        value={localFilters.exerciseId ?? 0}
                         onChange={(e) => setLocalFilters(prev => ({ ...prev, exerciseId: Number(e.target.value) || undefined }))}
                         className="w-full px-2 py-1 border rounded"
                       >
-                        <option value={0}>All exercises</option>
+                        <option value={0}>Tất cả bài tập</option>
                         {exercises && exercises.map(ex => (
                           <option key={ex.id} value={ex.id}>{ex.title} ({ex.type})</option>
                         ))}
@@ -246,13 +279,13 @@ const QuestionsListPage = memo(function QuestionsListPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Skill</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Kỹ năng</label>
                       <select
-                        value={filters.skill ?? ''}
+                        value={localFilters.skill ?? ''}
                         onChange={(e) => setLocalFilters(prev => ({ ...prev, skill: e.target.value || undefined }))}
                         className="w-full px-2 py-1 border rounded"
                       >
-                        <option value="">Any</option>
+                        <option value="">Tất cả</option>
                         <option value="Listening">Listening</option>
                         <option value="Reading">Reading</option>
                         <option value="Writing">Writing</option>
@@ -261,58 +294,60 @@ const QuestionsListPage = memo(function QuestionsListPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Question Type</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Loại câu hỏi</label>
                       <select
-                        value={filters.questionType ?? ''}
+                        value={localFilters.questionType ?? ''}
                         onChange={(e) => setLocalFilters(prev => ({ ...prev, questionType: (e.target.value as unknown) as any || undefined }))}
                         className="w-full px-2 py-1 border rounded"
                       >
-                        <option value="">Any</option>
-                        <option value="MultipleChoice">Multiple Choice</option>
-                        <option value="FillBlank">Fill in the Blank</option>
-                        <option value="Essay">Essay</option>
-                        <option value="TrueFalse">True/False</option>
+                        <option value="">Tất cả</option>
+                        <option value="MultipleChoice">Trắc nghiệm</option>
+                        <option value="FillBlank">Điền vào chỗ trống</option>
+                        <option value="Essay">Tự luận</option>
+                        <option value="TrueFalse">Đúng/Sai</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Trạng thái</label>
                       <select
-                        value={filters.isActive === undefined ? '' : filters.isActive ? 'active' : 'inactive'}
+                        value={localFilters.isActive === undefined ? '' : localFilters.isActive ? 'active' : 'inactive'}
                         onChange={(e) => {
                           const v = e.target.value;
                           setLocalFilters(prev => ({ ...prev, isActive: v === '' ? undefined : v === 'active' }));
                         }}
                         className="w-full px-2 py-1 border rounded"
                       >
-                        <option value="">Any</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
+                        <option value="">Tất cả</option>
+                        <option value="active">Đang hoạt động</option>
+                        <option value="inactive">Ngưng hoạt động</option>
                       </select>
                     </div>
 
                     <div className="flex justify-end space-x-2 pt-2">
                       <button
                         type="button"
-                        className="px-3 py-1 border rounded text-sm"
+                        className="px-3 py-1 border rounded text-sm hover:bg-slate-50 transition-colors"
                         onClick={() => {
-                          setFilters({ search: '' });
+                          const resetFilters = { search: '' };
+                          setFilters(resetFilters);
+                          setLocalFilters(resetFilters);
                           setPagination(prev => ({ ...prev, pageNumber: 1 }));
                           setShowFiltersOpen(false);
                         }}
                       >
-                        Clear
+                        Xóa lọc
                       </button>
                       <button
                         type="button"
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors shadow-sm"
                         onClick={() => {
                           setFilters(localFilters);
                           setPagination(prev => ({ ...prev, pageNumber: 1 }));
                           setShowFiltersOpen(false);
                         }}
                       >
-                        Apply
+                        Áp dụng
                       </button>
                     </div>
                   </div>
@@ -320,32 +355,36 @@ const QuestionsListPage = memo(function QuestionsListPage() {
               )}
             </div>
 
+            <Button variant="secondary" onClick={() => setShowImportModal(true)} className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Nhập từ Excel
+            </Button>
             <Button onClick={() => setShowCreateModal(true)} className="flex items-center">
               <IconPlus className="w-5 h-5 mr-2" />
-              Add Question
+              Thêm câu hỏi
             </Button>
           </div>
         </div>
 
         <QuestionTable
-          questions={questions}
+          questions={questionsWithTitle}
           onEdit={handleEditQuestion}
           onDelete={handleDeleteQuestion}
           isLoading={isLoading}
         />
 
-        {pagination.totalPages > 1 && (
-          <div className="mt-6">
-            <Pagination
-              currentPage={pagination.pageNumber}
-              totalPages={pagination.totalPages}
-              pageSize={pagination.pageSize}
-              totalCount={pagination.totalCount}
-              onPageChange={handlePageChange}
-              onPageSizeChange={(pageSize: number) => handlePageChange(1, pageSize)}
-            />
-          </div>
-        )}
+        <div className="mt-6">
+          <Pagination
+            currentPage={pagination.pageNumber}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            totalCount={pagination.totalCount}
+            onPageChange={handlePageChange}
+            onPageSizeChange={(pageSize: number) => handlePageChange(1, pageSize)}
+          />
+        </div>
       </Card>
 
       {/* Create Modal */}
@@ -361,6 +400,15 @@ const QuestionsListPage = memo(function QuestionsListPage() {
         question={editingQuestion}
         onClose={handleModalClose}
         onSubmit={handleUpdateQuestion}
+      />
+
+      {/* Import Modal */}
+      <ImportExcelModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onSuccess={() => {
+          setPagination(prev => ({ ...prev, pageNumber: 1 }));
+        }}
       />
     </div>
   );

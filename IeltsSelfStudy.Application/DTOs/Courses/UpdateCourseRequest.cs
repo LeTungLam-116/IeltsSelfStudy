@@ -10,6 +10,7 @@ public class UpdateCourseRequest
 
     [MaxLength(500)]
     public string? ShortDescription { get; set; }
+    public string? ThumbnailUrl { get; set; }
 
     [Required]
     [MaxLength(50)]

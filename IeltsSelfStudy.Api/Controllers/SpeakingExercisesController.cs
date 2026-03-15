@@ -4,6 +4,7 @@ using IeltsSelfStudy.Application.Interfaces;
 using IeltsSelfStudy.Api.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 
 namespace IeltsSelfStudy.Api.Controllers;
 
@@ -72,6 +73,35 @@ public class SpeakingExercisesController : ControllerBase
         var userId = User.GetUserId();
         request.UserId = userId;
         var result = await _speakingService.EvaluateAsync(id, request);
+        return Ok(result);
+    }
+
+    // ✅ Evaluate audio endpoint (Whisper)
+    [HttpPost("{id:int}/evaluate-audio")]
+    [Authorize]
+    [DisableRequestSizeLimit]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> EvaluateAudio(int id, IFormFile audio, [FromForm] string? targetBand)
+    {
+        if (audio == null || audio.Length == 0)
+            return BadRequest("Audio file is empty.");
+
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized();
+        }
+        
+        using var stream = audio.OpenReadStream();
+        
+        double? parsedBand = null;
+        if (!string.IsNullOrEmpty(targetBand) && double.TryParse(targetBand, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+        {
+            parsedBand = parsed;
+        }
+
+        var result = await _speakingService.EvaluateAudioAsync(id, stream, audio.FileName, userId, parsedBand);
+        
         return Ok(result);
     }
 }

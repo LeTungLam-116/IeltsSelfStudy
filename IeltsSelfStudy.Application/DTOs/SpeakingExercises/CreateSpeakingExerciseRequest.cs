@@ -15,6 +15,7 @@ public class CreateSpeakingExerciseRequest
 
     [Required]
     public string Question { get; set; } = string.Empty;
+    public string? CueCardJson { get; set; }
 
     [MaxLength(100)]
     public string? Topic { get; set; }

@@ -11,5 +11,8 @@ public interface IQuestionService
     Task<QuestionDto?> GetByIdAsync(int id);
     Task<QuestionDto> CreateAsync(CreateQuestionRequest request);
     Task<QuestionDto?> UpdateAsync(int id, UpdateQuestionRequest request);
+    Task<List<QuestionImportPreviewDto>> PreviewImportFromExcelAsync(int exerciseId, System.IO.Stream excelStream);
+    Task<(int count, string errorMessage)> ConfirmImportAsync(ConfirmImportRequest request);
+    Task<(int count, string errorMessage)> ImportFromExcelAsync(int exerciseId, System.IO.Stream excelStream);
     Task<bool> DeleteAsync(int id);
 }

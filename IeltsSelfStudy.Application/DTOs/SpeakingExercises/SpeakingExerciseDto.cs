@@ -8,6 +8,7 @@ public class SpeakingExerciseDto
     public string Part { get; set; } = string.Empty;
     public string Question { get; set; } = string.Empty;
     public string? Topic { get; set; }
+    public string? CueCardJson { get; set; }
     public string Level { get; set; } = string.Empty;
     public string? Tips { get; set; }
     public bool IsActive { get; set; }

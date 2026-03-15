@@ -7,6 +7,8 @@ public class Course
     public string Name { get; set; } = string.Empty;
 
     public string? ShortDescription { get; set; }
+    
+    public string? ThumbnailUrl { get; set; }
 
     public string Level { get; set; } = string.Empty;   // Beginner, Intermediate...
 

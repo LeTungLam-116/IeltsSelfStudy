@@ -34,68 +34,68 @@ const KPIGrid = memo(function KPIGrid({ data, isLoading = false }: KPIGridProps)
   if (!data) {
     return (
       <section aria-labelledby="kpi-error" className="text-center py-12">
-        <h2 id="kpi-error" className="sr-only">Key Performance Indicators Error</h2>
-        <p className="text-gray-600">No KPI data available</p>
+        <h2 id="kpi-error" className="sr-only">Lỗi tải chỉ số hệ thống</h2>
+        <p className="text-gray-600">Không có dữ liệu chỉ số</p>
       </section>
     );
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'VND',
     }).format(amount);
   };
 
   const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('en-US').format(num);
+    return new Intl.NumberFormat('vi-VN').format(num);
   };
 
   return (
-    <section aria-labelledby="kpi-heading" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <h2 id="kpi-heading" className="sr-only">Key Performance Indicators</h2>
+    <section aria-labelledby="kpi-heading" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      <h2 id="kpi-heading" className="sr-only">Chỉ số hiệu suất chính</h2>
 
       <StatCard
-        title="Total Users"
+        title="Tổng người dùng"
         value={formatNumber(data.totalUsers)}
         icon={<IconUsers />}
-        change={`+${data.userGrowthPercentage.toFixed(1)}% from last month`}
+        change={`+${data.userGrowthPercentage.toFixed(1)}% so với tháng trước`}
         changeType="positive"
         sparklineData={[1200, 1215, 1230, 1247]} // Mock sparkline data
       />
 
       <StatCard
-        title="Active Users"
+        title="Đang hoạt động"
         value={formatNumber(data.activeUsers)}
         icon={<IconChart />}
-        change={`${Math.round((data.activeUsers / data.totalUsers) * 100)}% of total users`}
+        change={`${Math.round((data.activeUsers / data.totalUsers) * 100)}% tổng người dùng`}
         changeType="neutral"
         sparklineData={[850, 860, 875, 892]} // Mock sparkline data
       />
 
       <StatCard
-        title="Total Courses"
+        title="Tổng khóa học"
         value={data.totalCourses}
         icon={<IconBook />}
-        change="View course details"
+        change="Xem chi tiết các khóa học"
         changeType="neutral"
         sparklineData={[40, 41, 42, 45]} // Mock sparkline data
       />
 
       <StatCard
-        title="Total Attempts"
+        title="Lượt làm bài"
         value={formatNumber(data.totalAttempts)}
         icon={<IconDocument />}
-        change={`Avg session: ${data.averageSessionTimeMinutes}min`}
+        change={`Thời gian TB: ${data.averageSessionTimeMinutes} phút`}
         changeType="neutral"
         sparklineData={[5000, 5200, 5400, 5832]} // Mock sparkline data
       />
 
       <StatCard
-        title="Revenue"
+        title="Doanh thu"
         value={formatCurrency(data.monthlyRecurringRevenue)}
         icon={<IconMoney />}
-        change={`+${data.revenueGrowthPercentage.toFixed(1)}% from last month`}
+        change={`+${data.revenueGrowthPercentage.toFixed(1)}% so với tháng trước`}
         changeType="positive"
         sparklineData={[12000, 12500, 13100, 13500]} // Mock sparkline data
       />

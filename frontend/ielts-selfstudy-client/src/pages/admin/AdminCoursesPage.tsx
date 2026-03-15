@@ -84,12 +84,12 @@ export default function AdminCoursesPage() {
 
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.description.toLowerCase().includes(searchTerm.toLowerCase());
+      course.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || course.category === categoryFilter;
     const matchesDifficulty = difficultyFilter === 'all' || course.difficulty === difficultyFilter;
     const matchesStatus = statusFilter === 'all' ||
-                         (statusFilter === 'published' && course.isPublished) ||
-                         (statusFilter === 'draft' && !course.isPublished);
+      (statusFilter === 'published' && course.isPublished) ||
+      (statusFilter === 'draft' && !course.isPublished);
 
     return matchesSearch && matchesCategory && matchesDifficulty && matchesStatus;
   });
@@ -115,7 +115,7 @@ export default function AdminCoursesPage() {
   };
 
   const handleDeleteCourse = (courseId: number) => {
-    if (confirm('Are you sure you want to delete this course?')) {
+    if (confirm('Bạn có chắc chắn muốn xóa khóa học này không?')) {
       setCourses(courses.filter(course => course.id !== courseId));
     }
   };
@@ -144,19 +144,19 @@ export default function AdminCoursesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Course Management</h1>
-          <p className="text-gray-600 mt-1">Create and manage IELTS courses</p>
+          <h1 className="text-3xl font-bold text-gray-900">Quản lý khóa học</h1>
+          <p className="text-gray-600 mt-1">Tạo và quản lý các khóa học IELTS</p>
         </div>
         <div className="flex space-x-2">
-            <button
+          <button
             onClick={() => setViewMode(viewMode === 'table' ? 'cards' : 'table')}
             className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
           >
-            {viewMode === 'table' ? <><IconBook className="mr-2"/> Cards View</> : <><IconChart className="mr-2"/> Table View</>}
+            {viewMode === 'table' ? <><IconBook className="mr-2" /> Dạng thẻ</> : <><IconChart className="mr-2" /> Dạng bảng</>}
           </button>
           <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors">
             <IconPlus className="mr-2" />
-            Add New Course
+            Thêm khóa học mới
           </button>
         </div>
       </div>
@@ -166,12 +166,12 @@ export default function AdminCoursesPage() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-2">
             <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-              Search
+              Tìm kiếm
             </label>
             <input
               type="text"
               id="search"
-              placeholder="Search courses..."
+              placeholder="Tìm theo tên hoặc mô tả..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -180,7 +180,7 @@ export default function AdminCoursesPage() {
 
           <div>
             <label htmlFor="category-filter" className="block text-sm font-medium text-gray-700 mb-1">
-              Category
+              Kỹ năng
             </label>
             <select
               id="category-filter"
@@ -188,7 +188,7 @@ export default function AdminCoursesPage() {
               onChange={(e) => setCategoryFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="all">All Categories</option>
+              <option value="all">Tất cả kỹ năng</option>
               {categories.map(category => (
                 <option key={category} value={category}>{category}</option>
               ))}
@@ -197,7 +197,7 @@ export default function AdminCoursesPage() {
 
           <div>
             <label htmlFor="difficulty-filter" className="block text-sm font-medium text-gray-700 mb-1">
-              Difficulty
+              Độ khó
             </label>
             <select
               id="difficulty-filter"
@@ -205,16 +205,16 @@ export default function AdminCoursesPage() {
               onChange={(e) => setDifficultyFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="all">All Levels</option>
-              {difficulties.map(difficulty => (
-                <option key={difficulty} value={difficulty}>{difficulty}</option>
-              ))}
+              <option value="all">Tất cả trình độ</option>
+              <option value="Beginner">Cơ bản (Beginner)</option>
+              <option value="Intermediate">Trung cấp (Intermediate)</option>
+              <option value="Advanced">Nâng cao (Advanced)</option>
             </select>
           </div>
 
           <div>
             <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-1">
-              Status
+              Trạng thái
             </label>
             <select
               id="status-filter"
@@ -222,9 +222,9 @@ export default function AdminCoursesPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="all">All Status</option>
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
+              <option value="all">Tất cả trạng thái</option>
+              <option value="published">Đã xuất bản</option>
+              <option value="draft">Bản nháp</option>
             </select>
           </div>
         </div>
@@ -240,7 +240,7 @@ export default function AdminCoursesPage() {
             }}
             className="px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
           >
-            Clear Filters
+            Xóa lọc
           </button>
         </div>
       </div>
@@ -254,22 +254,22 @@ export default function AdminCoursesPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Course
+                    Khóa học
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
+                    Kỹ năng
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Difficulty
+                    Độ khó
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Students
+                    Học viên
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    Trạng thái
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    Thao tác
                   </th>
                 </tr>
               </thead>
@@ -298,19 +298,18 @@ export default function AdminCoursesPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getDifficultyColor(course.difficulty)}`}>
-                        {course.difficulty}
+                        {course.difficulty === 'Beginner' ? 'Cơ bản' : course.difficulty === 'Intermediate' ? 'Trung cấp' : 'Nâng cao'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {course.enrolledStudents}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        course.isPublished
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {course.isPublished ? 'Published' : 'Draft'}
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${course.isPublished
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                        }`}>
+                        {course.isPublished ? 'Đã xuất bản' : 'Bản nháp'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
@@ -318,21 +317,20 @@ export default function AdminCoursesPage() {
                         onClick={() => handleEditCourse(course)}
                         className="text-blue-600 hover:text-blue-900"
                       >
-                        Edit
+                        Sửa
                       </button>
                       <button
                         onClick={() => handleTogglePublish(course.id)}
-                        className={`${
-                          course.isPublished ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'
-                        }`}
+                        className={`${course.isPublished ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'
+                          }`}
                       >
-                        {course.isPublished ? 'Unpublish' : 'Publish'}
+                        {course.isPublished ? 'Gỡ bài' : 'Xuất bản'}
                       </button>
                       <button
                         onClick={() => handleDeleteCourse(course.id)}
                         className="text-red-600 hover:text-red-900"
                       >
-                        Delete
+                        Xóa
                       </button>
                     </td>
                   </tr>
@@ -350,7 +348,7 @@ export default function AdminCoursesPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="text-2xl">{getCategoryIcon(course.category)}</div>
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getDifficultyColor(course.difficulty)}`}>
-                    {course.difficulty}
+                    {course.difficulty === 'Beginner' ? 'Cơ bản' : course.difficulty === 'Intermediate' ? 'Trung cấp' : 'Nâng cao'}
                   </span>
                 </div>
 
@@ -363,17 +361,16 @@ export default function AdminCoursesPage() {
                 </p>
 
                 <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                  <span className="inline-flex items-center"><IconUsers className="mr-2" />{course.enrolledStudents} students</span>
-                  <span className="inline-flex items-center"><IconClock className="mr-2" />{course.duration}min</span>
+                  <span className="inline-flex items-center"><IconUsers className="mr-2" />{course.enrolledStudents} học viên</span>
+                  <span className="inline-flex items-center"><IconClock className="mr-2" />{course.duration} phút</span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    course.isPublished
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {course.isPublished ? 'Published' : 'Draft'}
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${course.isPublished
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-gray-100 text-gray-800'
+                    }`}>
+                    {course.isPublished ? 'Đã xuất bản' : 'Bản nháp'}
                   </span>
 
                   <div className="flex space-x-2">
@@ -381,15 +378,14 @@ export default function AdminCoursesPage() {
                       onClick={() => handleEditCourse(course)}
                       className="text-blue-600 hover:text-blue-900 text-sm font-medium"
                     >
-                      Edit
+                      Sửa
                     </button>
                     <button
                       onClick={() => handleTogglePublish(course.id)}
-                      className={`text-sm font-medium ${
-                        course.isPublished ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'
-                      }`}
+                      className={`text-sm font-medium ${course.isPublished ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'
+                        }`}
                     >
-                      {course.isPublished ? 'Unpublish' : 'Publish'}
+                      {course.isPublished ? 'Gỡ bài' : 'Xuất bản'}
                     </button>
                   </div>
                 </div>
@@ -400,11 +396,11 @@ export default function AdminCoursesPage() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {totalPages > 0 && (
         <div className="bg-white px-4 py-3 border border-gray-200 rounded-lg">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Showing {((currentPage - 1) * coursesPerPage) + 1} to {Math.min(currentPage * coursesPerPage, filteredCourses.length)} of {filteredCourses.length} courses
+              Hiển thị {((currentPage - 1) * coursesPerPage) + 1} đến {Math.min(currentPage * coursesPerPage, filteredCourses.length)} trong số {filteredCourses.length} khóa học
             </div>
             <div className="flex space-x-1">
               <button
@@ -412,17 +408,16 @@ export default function AdminCoursesPage() {
                 disabled={currentPage === 1}
                 className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
-                Previous
+                Trước
               </button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`px-3 py-1 border rounded text-sm ${
-                    page === currentPage
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'border-gray-300 hover:bg-gray-50'
-                  }`}
+                  className={`px-3 py-1 border rounded text-sm ${page === currentPage
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'border-gray-300 hover:bg-gray-50'
+                    }`}
                 >
                   {page}
                 </button>
@@ -432,7 +427,7 @@ export default function AdminCoursesPage() {
                 disabled={currentPage === totalPages}
                 className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
-                Next
+                Sau
               </button>
             </div>
           </div>
@@ -444,15 +439,15 @@ export default function AdminCoursesPage() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Course</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Chỉnh sửa khóa học</h3>
               <p className="text-sm text-gray-600 mb-4">
-                Edit functionality for "{selectedCourse.title}" will be implemented here.
+                Chức năng chỉnh sửa cho "{selectedCourse.title}" sẽ được triển khai tại đây.
               </p>
               <button
                 onClick={() => setShowModal(false)}
                 className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
               >
-                Close
+                Đóng
               </button>
             </div>
           </div>

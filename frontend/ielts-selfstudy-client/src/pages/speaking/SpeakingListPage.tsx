@@ -1,42 +1,189 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { getSpeakingExercises, type SpeakingExerciseDto } from "../../api/speakingExerciseApi";
+import { ExerciseCard } from "../../components/exercises";
+import Footer from "../../components/home/Footer";
+import type { Exercise } from "../../types";
 
-function SpeakingListPage() {
+// LayoutContainer component
+const LayoutContainer = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${className}`}>{children}</div>
+);
+
+export default function SpeakingListPage() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<SpeakingExerciseDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState("All");
+
+  const levels = ["All", "Beginner", "Intermediate", "Advanced"];
 
   useEffect(() => {
     getSpeakingExercises()
       .then(setItems)
-      .catch(console.error)
+      .catch((err) => {
+        console.error(err);
+        setError("Không tải được danh sách bài Speaking.");
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p>Đang tải Speaking...</p>;
+  const filteredExercises = useMemo(() => {
+    return items.filter((ex) => {
+      const matchesSearch = ex.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (ex.topic?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+      const matchesLevel = selectedLevel === "All" || ex.level === selectedLevel;
+
+      return matchesSearch && matchesLevel;
+    }).map(dto => ({
+      id: dto.id,
+      title: dto.title,
+      description: dto.topic || dto.part || "Luyện nói IELTS Speaking.",
+      type: "Speaking",
+      level: dto.level,
+      isActive: dto.isActive,
+      // Speaking specific props
+      questionCount: 1,
+      durationSeconds: 900 // Example
+    } as Exercise));
+  }, [items, searchQuery, selectedLevel]);
+
+  const handleStartExercise = (exerciseId: number) => {
+    navigate(`/speaking/${exerciseId}`);
+  };
+
+  if (loading) {
+    return (
+      <div style={{ padding: "100px 0", textAlign: "center", minHeight: "60vh" }}>
+        <div className="animate-spin" style={{
+          width: "40px",
+          height: "40px",
+          border: "4px solid #f3f3f3",
+          borderTop: "4px solid #0071f9",
+          borderRadius: "50%",
+          margin: "0 auto 20px auto"
+        }}></div>
+        <p style={{ color: "#64748b", fontWeight: 500 }}>Đang tải bài tập Speaking...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-20">
+        <h3 className="text-xl font-bold text-red-600 mb-2">Lỗi tải dữ liệu</h3>
+        <p className="text-gray-600 mb-4">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Thử lại
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto" }}>
-      <h2>Speaking Exercises</h2>
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      {/* Header & Filter Section */}
+      <section className="bg-white border-b border-slate-200 py-12 md:py-16">
+        <LayoutContainer>
+          <div className="text-center mb-10">
+            <h1 className="text-3xl md:text-4xl font-black text-slate-800 mb-4 tracking-tight">
+              Thư Viện Bài Tập <span className="text-orange-500">Speaking</span> 🗣️
+            </h1>
+            <p className="text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed">
+              Luyện nói tự tin với các chủ đề Speaking thực tế.
+              Ghi âm câu trả lời và nhận đánh giá chi tiết.
+            </p>
+          </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <Link to="/speaking/history">Xem lịch sử Speaking</Link>
-      </div>
+          <div className="max-w-4xl mx-auto">
+            {/* Search Bar */}
+            <div className="relative mb-8">
+              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xl opacity-50">🔍</span>
+              <input
+                type="text"
+                placeholder="Tìm kiếm bài tập theo tên hoặc chủ đề..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full py-4 pl-14 pr-5 rounded-2xl border-2 border-slate-100 bg-slate-50 text-base focus:border-orange-500 focus:bg-white focus:outline-none transition-all duration-200 shadow-sm"
+              />
+            </div>
 
-      {items.length === 0 ? (
-        <p>Chưa có bài Speaking.</p>
-      ) : (
-        <ul>
-          {items.map((s) => (
-            <li key={s.id} style={{ marginBottom: 10 }}>
-              <strong>{s.title}</strong> — {s.part} — {s.level}{" "}
-              <Link to={`/speaking/${s.id}`}>Luyện</Link>
-            </li>
-          ))}
-        </ul>
-      )}
+            {/* Filters */}
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-xs font-bold text-slate-400 tracking-wider uppercase">TRÌNH ĐỘ</span>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {levels.map(level => (
+                    <button
+                      key={level}
+                      onClick={() => setSelectedLevel(level)}
+                      className={`px-5 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 ${selectedLevel === level
+                        ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-200"
+                        : "bg-white border-slate-200 text-slate-500 hover:border-orange-300 hover:text-orange-500"
+                        }`}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </LayoutContainer>
+      </section>
+
+      {/* Main Content Grid */}
+      <section className="py-12 flex-grow">
+        <LayoutContainer>
+          <div className="flex justify-between items-center mb-8 px-2">
+            <h2 className="text-xl font-bold text-slate-800">
+              {filteredExercises.length} Bài tập được tìm thấy
+            </h2>
+            {(searchQuery !== "" || selectedLevel !== "All") && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedLevel("All");
+                }}
+                className="text-red-500 font-semibold text-sm hover:underline hover:text-red-600 transition-colors"
+              >
+                Xóa bộ lọc
+              </button>
+            )}
+          </div>
+
+          {filteredExercises.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl shadow-sm border border-slate-100">
+              <div className="text-6xl mb-6 opacity-80">📭</div>
+              <h3 className="text-xl font-bold text-slate-800 mb-3">Không tìm thấy bài tập nào</h3>
+              <p className="text-slate-500 text-center max-w-sm">
+                Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc trình độ để xem thêm kết quả.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredExercises.map((exercise) => (
+                <div key={exercise.id} className="h-full">
+                  <ExerciseCard
+                    exercise={exercise}
+                    onStart={handleStartExercise}
+                    showStartButton={true}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </LayoutContainer>
+      </section>
+
+      <Footer />
     </div>
   );
 }
 
-export default SpeakingListPage;

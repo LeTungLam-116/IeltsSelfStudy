@@ -1,5 +1,5 @@
 // Question types for admin management
-export type QuestionType = 'MultipleChoice' | 'FillBlank' | 'Essay' | 'TrueFalse';
+export type QuestionType = 'MultipleChoice' | 'FillBlank' | 'Essay' | 'TrueFalse' | 'TrueFalseNotGiven' | 'ShortAnswer' | 'Matching' | 'FormCompletion' | 'SentenceCompletion' | 'SummaryCompletion';
 
 export interface QuestionOption {
   id: string;
@@ -10,6 +10,7 @@ export interface QuestionDto {
   id: number;
   skill: string; // "Listening", "Reading", "Writing", "Speaking"
   exerciseId: number;
+  exerciseTitle?: string; // Tên bài tập — có thể có hoặc không tùy theo API
   questionNumber: number;
   questionText: string; // Markdown content
   questionType: QuestionType;
@@ -59,4 +60,20 @@ export interface QuestionFormData {
   points: number;
   options: QuestionOption[]; // UI-friendly array instead of JSON string
   isActive: boolean;
+}
+
+export interface QuestionImportPreviewDto {
+  questionNumber: number;
+  questionText: string;
+  questionType: QuestionType;
+  correctAnswer: string;
+  points: number;
+  optionsJson: string | null;
+  isValid: boolean;
+  errorMessage: string;
+}
+
+export interface ConfirmImportRequest {
+  exerciseId: number;
+  questions: QuestionImportPreviewDto[];
 }

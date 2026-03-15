@@ -3,6 +3,7 @@ import { Card } from '../ui';
 
 const LazyLineChart = React.lazy(() => import('./charts/LineChart'));
 const LazyAreaChart = React.lazy(() => import('./charts/AreaChart'));
+const LazyBarChart = React.lazy(() => import('./charts/BarChart'));
 
 export interface ChartDataPoint {
   date: string;
@@ -13,18 +14,25 @@ export interface ChartDataPoint {
 export interface OverviewChartsProps {
   userGrowthData?: ChartDataPoint[];
   revenueData?: ChartDataPoint[];
+  averageScores?: Record<string, number>;
   isLoading?: boolean;
 }
 
 const OverviewCharts = memo(function OverviewCharts({
   userGrowthData,
   revenueData,
+  averageScores,
   isLoading = false
 }: OverviewChartsProps) {
+  const scoreData = React.useMemo(() =>
+    Object.entries(averageScores || {}).map(([name, value]) => ({ name, value })),
+    [averageScores]
+  );
+
   if (isLoading) {
     return (
       <section aria-labelledby="charts-loading" className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <h2 id="charts-loading" className="sr-only">Charts Loading</h2>
+        <h2 id="charts-loading" className="sr-only">Đang tải biểu đồ</h2>
         {Array.from({ length: 2 }).map((_, index) => (
           <div key={index} className="animate-pulse">
             <div className="bg-white rounded-lg shadow p-6">
@@ -39,19 +47,19 @@ const OverviewCharts = memo(function OverviewCharts({
 
   return (
     <section aria-labelledby="charts-heading" className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <h2 id="charts-heading" className="sr-only">Performance Charts</h2>
+      <h2 id="charts-heading" className="sr-only">Biểu đồ hiệu suất</h2>
 
       {/* User Growth Chart */}
       <Card className="p-6" role="region" aria-labelledby="user-growth-chart-heading">
         <h3 id="user-growth-chart-heading" className="text-lg font-semibold text-gray-900 mb-4">
-          User Growth Trend
+          Xu hướng người dùng
         </h3>
         <p className="text-sm text-gray-600 mb-4" id="user-growth-description">
-          Daily user registration trends over the last 30 days
+          Số lượng đăng ký mới hàng ngày trong 30 ngày qua
         </p>
         <Suspense fallback={
           <div className="h-64 flex items-center justify-center" aria-live="polite">
-            <div className="animate-pulse text-gray-400">Loading user growth chart...</div>
+            <div className="animate-pulse text-gray-400">Đang tải biểu đồ tăng trưởng...</div>
           </div>
         }>
           <LazyLineChart
@@ -60,7 +68,7 @@ const OverviewCharts = memo(function OverviewCharts({
             xAxisKey="date"
             color="#3B82F6"
             height={256}
-            ariaLabel="User growth trend chart showing number of users over time"
+            ariaLabel="Biểu đồ xu hướng người dùng hiển thị số lượng người dùng theo thời gian"
             ariaDescribedBy="user-growth-description"
           />
         </Suspense>
@@ -69,14 +77,14 @@ const OverviewCharts = memo(function OverviewCharts({
       {/* Revenue Chart */}
       <Card className="p-6" role="region" aria-labelledby="revenue-chart-heading">
         <h3 id="revenue-chart-heading" className="text-lg font-semibold text-gray-900 mb-4">
-          Revenue Trend
+          Xu hướng doanh thu
         </h3>
         <p className="text-sm text-gray-600 mb-4" id="revenue-description">
-          Daily revenue trends over the last 30 days in USD
+          Doanh thu hàng ngày trong 30 ngày qua (VND)
         </p>
         <Suspense fallback={
           <div className="h-64 flex items-center justify-center" aria-live="polite">
-            <div className="animate-pulse text-gray-400">Loading revenue chart...</div>
+            <div className="animate-pulse text-gray-400">Đang tải biểu đồ doanh thu...</div>
           </div>
         }>
           <LazyAreaChart
@@ -85,12 +93,40 @@ const OverviewCharts = memo(function OverviewCharts({
             xAxisKey="date"
             color="#10B981"
             height={256}
-            ariaLabel="Revenue trend chart showing revenue over time"
+            ariaLabel="Biểu đồ xu hướng doanh thu hiển thị doanh thu theo thời gian"
             ariaDescribedBy="revenue-description"
           />
         </Suspense>
       </Card>
-    </section>
+
+
+      {/* Average Scores Chart */}
+      <div className="col-span-1 lg:col-span-2">
+        <Card className="p-6" role="region" aria-labelledby="score-chart-heading">
+          <h3 id="score-chart-heading" className="text-lg font-semibold text-gray-900 mb-4">
+            Điểm trung bình theo kỹ năng
+          </h3>
+          <p className="text-sm text-gray-600 mb-4" id="score-description">
+            Điểm số trung bình của học viên trên từng kỹ năng (Reading, Listening, Writing, Speaking)
+          </p>
+          <Suspense fallback={
+            <div className="h-64 flex items-center justify-center" aria-live="polite">
+              <div className="animate-pulse text-gray-400">Đang tải biểu đồ điểm số...</div>
+            </div>
+          }>
+            <LazyBarChart
+              data={scoreData}
+              dataKey="value"
+              xAxisKey="name"
+              color="#8B5CF6"
+              height={300}
+              ariaLabel="Biểu đồ điểm trung bình theo kỹ năng"
+              ariaDescribedBy="score-description"
+            />
+          </Suspense>
+        </Card>
+      </div>
+    </section >
   );
 });
 

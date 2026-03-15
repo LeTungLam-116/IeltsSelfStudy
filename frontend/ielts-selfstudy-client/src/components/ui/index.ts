@@ -8,3 +8,4 @@ export { Badge, default as BadgeDefault } from './Badge';
 export { ToastProvider, useToast, default as ToastDefault } from './Toast';
 export { IconButton, default as IconButtonDefault } from './IconButton';
 export { TableWrapper, default as TableWrapperDefault } from './TableWrapper';
+export { Combobox } from './Combobox';

@@ -5,7 +5,7 @@ import { useAuthStore } from '../../stores/authStore';
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { register, isLoading, error, clearError } = useAuthStore();
-  
+
   const [formData, setFormData] = useState({
     email: '',
     fullName: '',
@@ -61,7 +61,7 @@ export default function RegisterPage() {
             Create your account
           </h2>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -74,7 +74,7 @@ export default function RegisterPage() {
               {passwordError}
             </div>
           )}
-          
+
           <div>
             <label htmlFor="fullName" className="sr-only">Full Name</label>
             <input
@@ -88,7 +88,7 @@ export default function RegisterPage() {
               onChange={handleChange}
             />
           </div>
-          
+
           <div>
             <label htmlFor="email" className="sr-only">Email address</label>
             <input
@@ -103,7 +103,7 @@ export default function RegisterPage() {
               onChange={handleChange}
             />
           </div>
-          
+
           <div>
             <label htmlFor="targetBand" className="block text-sm font-medium text-gray-700">
               Target IELTS Band
@@ -121,7 +121,7 @@ export default function RegisterPage() {
               onChange={handleChange}
             />
           </div>
-          
+
           <div>
             <label htmlFor="password" className="sr-only">Password</label>
             <input
@@ -135,7 +135,7 @@ export default function RegisterPage() {
               onChange={handleChange}
             />
           </div>
-          
+
           <div>
             <label htmlFor="confirmPassword" className="sr-only">Confirm Password</label>
             <input
@@ -159,7 +159,7 @@ export default function RegisterPage() {
               {isLoading ? 'Creating account...' : 'Create account'}
             </button>
           </div>
-          
+
           <div className="text-center">
             <Link to="/login" className="text-indigo-600 hover:text-indigo-500">
               Already have an account? Sign in

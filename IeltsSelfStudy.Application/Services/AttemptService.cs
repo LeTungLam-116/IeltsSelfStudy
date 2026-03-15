@@ -52,9 +52,14 @@ public class AttemptService : IAttemptService
 
     public async Task<AttemptDto?> GetByIdAsync(int id)
     {
-        _logger.LogDebug("Getting attempt by ID: {AttemptId}", id);
+        _logger.LogDebug("Getting attempt by ID with details: {AttemptId}", id);
         
-        var entity = await _attemptRepo.GetByIdAsync(id);
+        // Include related entities so MapToDto can fill human-readable info
+        var entity = await _attemptRepo.GetAll()
+            .Include(a => a.User)
+            .Include(a => a.Exercise)
+            .FirstOrDefaultAsync(a => a.Id == id);
+
         if (entity is null)
         {
             _logger.LogWarning("Attempt not found: {AttemptId}", id);
@@ -71,7 +76,7 @@ public class AttemptService : IAttemptService
 
         var (items, totalCount) = await _attemptRepo.GetPagedAsync(
             request,
-            filter: q => q.Where(a => a.UserId == userId && a.IsActive),
+            filter: q => q.Include(a => a.Exercise).Where(a => a.UserId == userId && a.IsActive),
             orderBy: q => q.OrderByDescending(a => a.CreatedAt)
         );
 
@@ -95,7 +100,7 @@ public class AttemptService : IAttemptService
 
         var (attempts, totalCount) = await _attemptRepo.GetPagedAsync(
             request,
-            filter: q => q.Where(a => a.UserId == userId && a.IsActive),
+            filter: q => q.Include(a => a.Exercise).Where(a => a.UserId == userId && a.IsActive),
             orderBy: q => q.OrderByDescending(a => a.CreatedAt)
         );
 
@@ -130,7 +135,7 @@ public class AttemptService : IAttemptService
 
         var (attempts, totalCount) = await _attemptRepo.GetPagedAsync(
             request,
-            filter: q => q.Where(a => a.ExerciseId == exerciseId && a.IsActive),
+            filter: q => q.Include(a => a.Exercise).Where(a => a.ExerciseId == exerciseId && a.IsActive),
             orderBy: q => q.OrderByDescending(a => a.CreatedAt)
         );
 

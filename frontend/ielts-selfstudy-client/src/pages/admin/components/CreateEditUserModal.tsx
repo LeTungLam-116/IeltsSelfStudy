@@ -7,8 +7,8 @@ import { Modal, Button, Input } from '../../../components/ui';
 
 // Zod schema for form validation
 const userFormSchema = z.object({
-  email: z.string().email('Invalid email address').min(1, 'Email is required'),
-  fullName: z.string().min(1, 'Full name is required').min(2, 'Full name must be at least 2 characters'),
+  email: z.string().email('Địa chỉ email không hợp lệ').min(1, 'Email là bắt buộc'),
+  fullName: z.string().min(1, 'Họ tên là bắt buộc').min(2, 'Họ tên phải có ít nhất 2 ký tự'),
   password: z.string().optional(),
   confirmPassword: z.string().optional(),
   role: z.enum(['Student', 'Admin']),
@@ -21,7 +21,7 @@ const userFormSchema = z.object({
   }
   return true;
 }, {
-  message: "Passwords don't match",
+  message: "Mật khẩu xác nhận không khớp",
   path: ["confirmPassword"],
 });
 
@@ -98,7 +98,7 @@ export function CreateEditUserModal({ isOpen, user, onClose, onSubmit }: CreateE
 
       // For create mode, password is required
       if (!isEditing && !processedData.password) {
-        throw new Error('Password is required for new users');
+        throw new Error('Mật khẩu là bắt buộc cho người dùng mới');
       }
 
       // For edit mode, remove password if empty (don't update password)
@@ -134,7 +134,7 @@ export function CreateEditUserModal({ isOpen, user, onClose, onSubmit }: CreateE
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={isEditing ? 'Edit User' : 'Create New User'}
+      title={isEditing ? 'Chỉnh sửa người dùng' : 'Tạo người dùng mới'}
       trapFocus={true}
       initialFocus="email"
     >
@@ -157,12 +157,12 @@ export function CreateEditUserModal({ isOpen, user, onClose, onSubmit }: CreateE
         {/* Full Name */}
         <div>
           <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-            Full Name *
+            Họ và tên *
           </label>
           <Input
             id="fullName"
             {...register('fullName')}
-            placeholder="John Doe"
+            placeholder="Nhập họ tên"
             error={!!errors.fullName}
             helperText={errors.fullName?.message}
           />
@@ -171,13 +171,13 @@ export function CreateEditUserModal({ isOpen, user, onClose, onSubmit }: CreateE
         {/* Password (only for create or when changing password in edit) */}
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            {isEditing ? 'New Password (leave empty to keep current)' : 'Password *'}
+            {isEditing ? 'Mật khẩu mới (để trống nếu không đổi)' : 'Mật khẩu *'}
           </label>
           <Input
             id="password"
             type="password"
             {...register('password')}
-            placeholder={isEditing ? 'Enter new password' : 'Enter password'}
+            placeholder={isEditing ? 'Nhập mật khẩu mới' : 'Nhập mật khẩu'}
             error={!!errors.password}
             helperText={errors.password?.message}
           />
@@ -187,13 +187,13 @@ export function CreateEditUserModal({ isOpen, user, onClose, onSubmit }: CreateE
         {watch('password') && (
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-              Confirm Password *
+              Xác nhận mật khẩu *
             </label>
             <Input
               id="confirmPassword"
               type="password"
               {...register('confirmPassword')}
-              placeholder="Confirm password"
+              placeholder="Nhập lại mật khẩu"
               error={!!errors.confirmPassword}
               helperText={errors.confirmPassword?.message}
             />
@@ -203,15 +203,15 @@ export function CreateEditUserModal({ isOpen, user, onClose, onSubmit }: CreateE
         {/* Role */}
         <div>
           <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-            Role *
+            Vai trò *
           </label>
           <select
             id="role"
             {...register('role')}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="Student">Student</option>
-            <option value="Admin">Admin</option>
+            <option value="Student">Học viên (Student)</option>
+            <option value="Admin">Quản trị viên (Admin)</option>
           </select>
           {errors.role && (
             <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>
@@ -221,7 +221,7 @@ export function CreateEditUserModal({ isOpen, user, onClose, onSubmit }: CreateE
         {/* Target Band */}
         <div>
           <label htmlFor="targetBand" className="block text-sm font-medium text-gray-700 mb-1">
-            Target Band (optional)
+            Target Band (tùy chọn)
           </label>
           <Input
             id="targetBand"
@@ -230,7 +230,7 @@ export function CreateEditUserModal({ isOpen, user, onClose, onSubmit }: CreateE
             max="9"
             step="0.5"
             {...register('targetBand', { valueAsNumber: true })}
-            placeholder="e.g. 6.5"
+            placeholder="Ví dụ: 6.5"
             error={!!errors.targetBand}
             helperText={errors.targetBand?.message}
           />
@@ -247,7 +247,7 @@ export function CreateEditUserModal({ isOpen, user, onClose, onSubmit }: CreateE
             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
           />
           <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
-            Active user
+            Tài khoản đang hoạt động
           </label>
         </div>
 
@@ -259,14 +259,14 @@ export function CreateEditUserModal({ isOpen, user, onClose, onSubmit }: CreateE
             onClick={handleClose}
             disabled={isSubmitting}
           >
-            Cancel
+            Hủy
           </Button>
           <Button
             type="submit"
             disabled={isSubmitting}
             loading={isSubmitting}
           >
-            {isSubmitting ? 'Saving...' : isEditing ? 'Update User' : 'Create User'}
+            {isSubmitting ? 'Đang lưu...' : isEditing ? 'Cập nhật' : 'Tạo người dùng'}
           </Button>
         </div>
       </form>

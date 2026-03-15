@@ -13,6 +13,12 @@ public class CreateWritingExerciseRequest
     [Required, MaxLength(20)]
     public string TaskType { get; set; } = "Task2";
 
+    [MaxLength(50)]
+    public string? ChartType { get; set; }
+
+    [MaxLength(50)]
+    public string? EssayType { get; set; }
+
     [Required]
     public string Question { get; set; } = string.Empty;
 
@@ -26,4 +32,10 @@ public class CreateWritingExerciseRequest
     public int MinWordCount { get; set; } = 250;
 
     public string? SampleAnswer { get; set; }
+
+    /// <summary>
+    /// URL hình ảnh cho Task 1 (Line Graph, Bar Chart, Pie Chart, Map, etc.)
+    /// </summary>
+    [MaxLength(500)]
+    public string? ImageUrl { get; set; }
 }

@@ -327,7 +327,7 @@ public class ExerciseService : IExerciseService
             {
                 Title = request.Title,
                 Description = request.Description,
-                AudioUrl = request.AudioUrl,
+                AudioUrl = request.AudioUrl ?? "",
                 Transcript = request.Transcript,
                 Level = request.Level ?? "Beginner",
                 // QuestionCount is auto-managed — default to 0 on create
@@ -345,7 +345,7 @@ public class ExerciseService : IExerciseService
             {
                 Title = request.Title,
                 Description = request.Description,
-                PassageText = request.PassageText,
+                PassageText = request.PassageText ?? "",
                 Level = request.Level ?? "Beginner",
                 // QuestionCount is auto-managed — default to 0 on create
                 QuestionCount = request.QuestionCount ?? 0
@@ -362,10 +362,13 @@ public class ExerciseService : IExerciseService
             Title = request.Title,
             Description = request.Description,
             TaskType = request.TaskType ?? "Task2",
+            ChartType = request.ChartType,
+            EssayType = request.EssayType,
             Question = request.Question ?? "",
             Topic = request.Topic,
             MinWordCount = request.MinWordCount ?? 250,
             SampleAnswer = request.SampleAnswer,
+            ImageUrl = request.ImageUrl,
             Level = request.Level ?? "Beginner"
         };
 
@@ -381,6 +384,8 @@ public class ExerciseService : IExerciseService
             Description = request.Description,
             Part = request.Part ?? "Part1",
             Question = request.Question ?? "",
+            CueCardJson = request.CueCardJson,
+            Topic = request.Topic,
             Tips = request.Tips,
             Level = request.Level ?? "Beginner"
         };
@@ -444,10 +449,13 @@ public class ExerciseService : IExerciseService
             Title = request.Title ?? current.Title,
             Description = request.Description ?? current.Description,
             TaskType = request.TaskType ?? current.TaskType ?? "Task2",
+            ChartType = request.ChartType ?? current.ChartType,
+            EssayType = request.EssayType ?? current.EssayType,
             Question = request.Question ?? current.Question ?? "",
             Topic = request.Topic ?? current.Topic,
             MinWordCount = request.MinWordCount ?? current.MinWordCount ?? 250,
             SampleAnswer = request.SampleAnswer ?? current.SampleAnswer,
+            ImageUrl = request.ImageUrl ?? current.ImageUrl,
             Level = request.Level ?? current.Level,
             IsActive = request.IsActive ?? current.IsActive
         };
@@ -468,6 +476,8 @@ public class ExerciseService : IExerciseService
             Description = request.Description ?? current.Description,
             Part = request.Part ?? current.Part ?? "Part1",
             Question = request.Question ?? current.Question ?? "",
+            CueCardJson = request.CueCardJson ?? current.CueCardJson,
+            Topic = request.Topic ?? current.Topic,
             Tips = request.Tips ?? current.Tips,
             Level = request.Level ?? current.Level,
             IsActive = request.IsActive ?? current.IsActive
@@ -532,9 +542,12 @@ public class ExerciseService : IExerciseService
         TotalAttempts = 0,
         // Type-specific fields
         TaskType = dto.TaskType,
+        ChartType = dto.ChartType,
+        EssayType = dto.EssayType,
         Topic = dto.Topic,
         MinWordCount = dto.MinWordCount,
         SampleAnswer = dto.SampleAnswer,
+        ImageUrl = dto.ImageUrl,
         Question = dto.Question
     };
 
@@ -555,6 +568,8 @@ public class ExerciseService : IExerciseService
         // Type-specific fields
         Part = dto.Part,
         Question = dto.Question,
+        CueCardJson = dto.CueCardJson,
+        Topic = dto.Topic,
         Tips = dto.Tips
     };
 

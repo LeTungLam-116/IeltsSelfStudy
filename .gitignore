@@ -1,4 +1,4 @@
-﻿# ====== .NET / Visual Studio ======
+# ====== .NET / Visual Studio ======
 bin/
 obj/
 Debug/
@@ -120,3 +120,6 @@ yarn-error.log*
 *.swp
 *.swo
 *~
+
+# ====== Uploads / Media ======
+**/wwwroot/uploads/

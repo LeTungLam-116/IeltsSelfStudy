@@ -123,6 +123,17 @@ export async function uploadAudioFile(file: File): Promise<{ url: string; durati
   return res.data;
 }
 
+// Upload image file for Writing Task 1 (charts, graphs, maps)
+export async function uploadImageFile(file: File): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await httpClient.post<{ location: string }>('/files/upload-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return { url: res.data.location };
+}
+
 // Utility functions
 export async function activateExercise(id: number): Promise<AdminExerciseDto> {
   return updateExercise(id, { isActive: true });

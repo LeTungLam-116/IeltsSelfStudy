@@ -33,4 +33,8 @@ public class AdminExerciseDto
     public string? Part { get; set; }
     public string? Question { get; set; }
     public string? Tips { get; set; }
+    public string? ChartType { get; set; } // Writing Task 1
+    public string? EssayType { get; set; } // Writing Task 2
+    public string? ImageUrl { get; set; } // Writing Task 1
+    public string? CueCardJson { get; set; } // Speaking Part 2
 }

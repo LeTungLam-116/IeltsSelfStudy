@@ -1,6 +1,6 @@
 import type { AdminExerciseDto } from '../../../../types/exercise';
 import { TableWrapper } from '../../../../components/ui';
-import { IconNote } from '../../../../components/icons';
+import { IconNote, IconEye, IconEdit, IconTrash } from '../../../../components/icons';
 
 interface ExerciseTableProps {
   exercises: AdminExerciseDto[];
@@ -53,6 +53,15 @@ export function ExerciseTable({
     }
   };
 
+  const getLevelLabel = (level: string) => {
+    switch (level?.toLowerCase()) {
+      case 'beginner': return 'Cơ bản';
+      case 'intermediate': return 'Trung cấp';
+      case 'advanced': return 'Nâng cao';
+      default: return level || 'N/A';
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -61,12 +70,12 @@ export function ExerciseTable({
             <div className="col-span-1">
               <div className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
             </div>
-            <div className="col-span-4">Exercise</div>
-            <div className="col-span-2">Type</div>
-            <div className="col-span-1">Level</div>
-            <div className="col-span-1">Questions</div>
-            <div className="col-span-2">Status</div>
-            <div className="col-span-1">Actions</div>
+            <div className="col-span-4">Bài tập</div>
+            <div className="col-span-2">Kỹ năng</div>
+            <div className="col-span-1">Độ khó</div>
+            <div className="col-span-1">Câu hỏi</div>
+            <div className="col-span-2">Trạng thái</div>
+            <div className="col-span-1">Hành động</div>
           </div>
         </div>
         <div className="divide-y divide-gray-200">
@@ -112,9 +121,9 @@ export function ExerciseTable({
           <div className="text-gray-400 mb-4">
             <span className="text-4xl"><IconNote /></span>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Exercises Found</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Không tìm thấy bài tập nào</h3>
           <p className="text-gray-600">
-            There are no exercises to display.
+            Hiện không có bài tập nào để hiển thị.
           </p>
         </div>
       </div>
@@ -123,125 +132,126 @@ export function ExerciseTable({
 
   return (
     <TableWrapper className="bg-white rounded-lg shadow overflow-hidden" >
-      {/* Table Header */}
-      <div className="px-6 py-3 bg-gray-50 border-b border-gray-200" role="rowgroup" aria-label="Table header">
-        <div className="grid grid-cols-12 gap-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" role="row">
-          <div className="col-span-1" role="columnheader">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              ref={(el) => {
-                if (el) el.indeterminate = someSelected;
-              }}
-              onChange={(e) => handleSelectAll(e.target.checked)}
-              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-              aria-label="Select all exercises"
-            />
-          </div>
-          <div className="col-span-4">Exercise</div>
-          <div className="col-span-2">Type</div>
-          <div className="col-span-1">Level</div>
-          <div className="col-span-1">Questions</div>
-          <div className="col-span-2">Status</div>
-          <div className="col-span-1">Actions</div>
-        </div>
-      </div>
-
-      {/* Table Body */}
-      <div className="divide-y divide-gray-200" role="rowgroup" aria-label="Table body">
-        {exercises.map((exercise) => (
-          <div key={exercise.id} role="row" className="px-6 py-4 grid grid-cols-12 gap-4 items-center hover:bg-gray-50 border-b border-gray-200">
-            {/* Checkbox */}
-            <div className="col-span-1">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <input
                 type="checkbox"
-                checked={selectedIds.includes(exercise.id)}
-                onChange={() => handleRowSelect(exercise.id)}
+                checked={allSelected}
+                ref={(el) => {
+                  if (el) el.indeterminate = someSelected;
+                }}
+                onChange={(e) => handleSelectAll(e.target.checked)}
                 className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                aria-label={`Select exercise ${exercise.title || 'Untitled'}`}
+                aria-label="Chọn tất cả bài tập"
               />
-            </div>
-
-            {/* Exercise Info */}
-            <div className="col-span-4 flex items-center" role="cell">
-              <div className="flex-shrink-0 h-10 w-10">
-                <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
-                  {exercise.type.charAt(0)}
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Bài tập
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Kỹ năng
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Độ khó
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Câu hỏi
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Trạng thái
+            </th>
+            <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '15%', minWidth: '140px' }}>
+              Hành động
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {exercises.map((exercise) => (
+            <tr key={exercise.id} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(exercise.id)}
+                  onChange={() => handleRowSelect(exercise.id)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                  aria-label={`Chọn bài tập ${exercise.title || 'Không có tiêu đề'}`}
+                />
+              </td>
+              <td className="px-6 py-4">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0 h-10 w-10">
+                    <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
+                      {exercise.type.charAt(0)}
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <div className="text-sm font-medium text-gray-900 truncate max-w-xs" title={exercise.title || ''}>
+                      {exercise.title || 'Bài tập chưa có tiêu đề'}
+                    </div>
+                    <div className="text-sm text-gray-500 truncate max-w-xs" title={exercise.description || ''}>
+                      {exercise.description || 'Không có mô tả'}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="ml-4">
-                <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                  {exercise.title || 'Untitled Exercise'}
-                </div>
-                <div className="text-sm text-gray-500 truncate max-w-xs">
-                  {exercise.description || 'No description'}
-                </div>
-              </div>
-            </div>
-
-            {/* Type */}
-            <div className="col-span-2" role="cell">
-              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeBadgeColor(exercise.type)}`}>
-                {exercise.type}
-              </span>
-            </div>
-
-            {/* Level */}
-            <div className="col-span-1" role="cell">
-              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getLevelBadgeColor(exercise.level || '')}`}>
-                {exercise.level || 'N/A'}
-              </span>
-            </div>
-
-            {/* Questions Count */}
-            <div className="col-span-1 text-sm text-gray-900" role="cell">
-              {exercise.type === 'Writing' && (exercise.taskType || 'Task')}
-              {exercise.type === 'Speaking' && (exercise.part || 'Part')}
-              {(exercise.type === 'Listening' || exercise.type === 'Reading') &&
-                (exercise.questionCount || 0)}
-            </div>
-
-            {/* Status */}
-            <div className="col-span-2" role="cell">
-              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                exercise.isActive
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeBadgeColor(exercise.type)}`}>
+                  {exercise.type}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getLevelBadgeColor(exercise.level || '')}`}>
+                  {getLevelLabel(exercise.level || '')}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {exercise.type === 'Writing' && (exercise.taskType || 'Task')}
+                {exercise.type === 'Speaking' && (exercise.part || 'Part')}
+                {(exercise.type === 'Listening' || exercise.type === 'Reading') &&
+                  (exercise.questionCount || 0)}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${exercise.isActive
                   ? 'bg-green-100 text-green-800'
                   : 'bg-red-100 text-red-800'
-              }`}>
-                {exercise.isActive ? 'Active' : 'Inactive'}
-              </span>
-            </div>
-
-            {/* Actions */}
-            <div className="col-span-1 flex space-x-1" role="cell">
-              <button
-                onClick={() => onViewDetails(exercise)}
-                className="text-blue-600 hover:text-blue-900 text-xs px-2 py-1 rounded hover:bg-blue-50"
-                aria-label={`View details for ${exercise.title || 'Untitled'}`}
-                title="View Details"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3" strokeWidth="2"/></svg>
-              </button>
-              <button
-                onClick={() => onEditExercise(exercise)}
-                className="text-blue-600 hover:text-blue-900 text-xs px-2 py-1 rounded hover:bg-blue-50"
-                aria-label={`Edit exercise ${exercise.title || 'Untitled'}`}
-                title="Edit"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5h6l2 2v6"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 15l-9 9-9-9 9-9 9 9z"/></svg>
-              </button>
-              <button
-                onClick={() => onDeleteExercise(exercise.id)}
-                className="text-red-600 hover:text-red-900 text-xs px-2 py-1 rounded hover:bg-red-50"
-                aria-label={`Delete exercise ${exercise.title || 'Untitled'}`}
-                title="Delete"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6h18"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 6v14a2 2 0 002 2h4a2 2 0 002-2V6"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 11v6M14 11v6"/></svg>
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+                  }`}>
+                  {exercise.isActive ? 'Đang hoạt động' : 'Ngưng hoạt động'}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                <div className="flex items-center justify-center space-x-2">
+                  <button
+                    onClick={() => onViewDetails(exercise)}
+                    className="text-blue-600 hover:text-blue-800 duration-200 p-2 rounded-lg hover:bg-blue-50 flex-shrink-0"
+                    aria-label={`Xem chi tiết bài tập ${exercise.title || 'Không có tiêu đề'}`}
+                    title="Xem chi tiết"
+                  >
+                    <IconEye className="w-6 h-6 flex-shrink-0" width={24} height={24} />
+                  </button>
+                  <button
+                    onClick={() => onEditExercise(exercise)}
+                    className="text-blue-600 hover:text-blue-800 duration-200 p-2 rounded-lg hover:bg-blue-50 flex-shrink-0"
+                    aria-label={`Sửa bài tập ${exercise.title || 'Không có tiêu đề'}`}
+                    title="Sửa"
+                  >
+                    <IconEdit className="w-6 h-6 flex-shrink-0" width={24} height={24} />
+                  </button>
+                  <button
+                    onClick={() => onDeleteExercise(exercise.id)}
+                    className="text-rose-600 hover:text-rose-800 duration-200 p-2 rounded-lg hover:bg-rose-50 flex-shrink-0"
+                    aria-label={`Xóa bài tập ${exercise.title || 'Không có tiêu đề'}`}
+                    title="Xóa"
+                  >
+                    <IconTrash className="w-6 h-6 flex-shrink-0" width={24} height={24} />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </TableWrapper>
   );
 }

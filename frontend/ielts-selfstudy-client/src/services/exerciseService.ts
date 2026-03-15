@@ -256,4 +256,29 @@ export async function deleteExercise(id: number): Promise<void> {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 }
 
+/**
+ * Import questions from Excel file for a specific exercise
+ * @param exerciseId The ID of the exercise to import questions for
+ * @param file The Excel file (.xlsx or .xls)
+ * @returns Object with message and count of imported questions
+ */
+export async function importQuestionsFromExcel(
+  exerciseId: number,
+  file: File
+): Promise<{ message: string; count: number }> {
+  const formData = new FormData();
+  formData.append('file', file);
 
+  const response = await fetch(`/api/exercises/${exerciseId}/import-questions`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Import failed' }));
+    throw new Error(error.message || 'Failed to import questions');
+  }
+
+  return response.json();
+}

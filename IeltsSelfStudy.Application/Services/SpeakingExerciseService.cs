@@ -1,7 +1,7 @@
 ﻿using IeltsSelfStudy.Application.DTOs.SpeakingExercises;
+using System.IO;
 using IeltsSelfStudy.Application.DTOs.Common;
 using IeltsSelfStudy.Application.DTOs.AI;
-using IeltsSelfStudy.Application.Abstractions;
 using IeltsSelfStudy.Application.Interfaces;
 using IeltsSelfStudy.Domain.Entities;
 using System.Text.Json;
@@ -14,17 +14,20 @@ public class SpeakingExerciseService : ISpeakingExerciseService
     private readonly IGenericRepository<Exercise> _exerciseRepo; // TPH
     private readonly IGenericRepository<Attempt> _attemptRepo;
     private readonly IOpenAiGradingService _aiGradingService;
+    private readonly IFileService _fileService;
     private readonly ILogger<SpeakingExerciseService> _logger;
 
     public SpeakingExerciseService(
         IGenericRepository<Exercise> exerciseRepo, // TPH
         IGenericRepository<Attempt> attemptRepo,
         IOpenAiGradingService aiGradingService,
+        IFileService fileService,
         ILogger<SpeakingExerciseService> logger)
     {
         _exerciseRepo = exerciseRepo; // TPH: Changed from _speakingRepo
         _attemptRepo = attemptRepo;
         _aiGradingService = aiGradingService;
+        _fileService = fileService;
         _logger = logger;
     }
 
@@ -88,6 +91,7 @@ public class SpeakingExerciseService : ISpeakingExerciseService
             Topic = request.Topic,
             Level = request.Level,
             Tips = request.Tips,
+            CueCardJson = request.CueCardJson,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -119,6 +123,7 @@ public class SpeakingExerciseService : ISpeakingExerciseService
         entity.Topic = request.Topic;
         entity.Level = request.Level;
         entity.Tips = request.Tips;
+        entity.CueCardJson = request.CueCardJson;
         entity.IsActive = request.IsActive;
 
         _exerciseRepo.Update(entity); // TPH: Changed from _speakingRepo
@@ -192,6 +197,66 @@ public class SpeakingExerciseService : ISpeakingExerciseService
         return await SaveAttemptAsync(speakingExerciseId, request, exerciseData, aiFeedback);
     }
 
+    public async Task<EvaluateSpeakingResponse> EvaluateAudioAsync(int speakingExerciseId, Stream audioStream, string fileName, int userId, double? targetBand = null)
+    {
+        _logger.LogInformation("Processing audio evaluation for ExerciseId: {ExerciseId}, UserId: {UserId}", speakingExerciseId, userId);
+
+        // 1. Buffer the entire stream into a byte array once.
+        // This is safe for speaking recordings (~1-5MB) and prevents
+        // "Closed Stream" errors when multiple services (Cloudinary, OpenAI) try to dispose it.
+        byte[] audioBytes;
+        using (var ms = new MemoryStream())
+        {
+            await audioStream.CopyToAsync(ms);
+            audioBytes = ms.ToArray();
+        }
+
+        if (audioBytes.Length == 0)
+        {
+            _logger.LogWarning("Received empty audio bytes for user {UserId}", userId);
+            throw new ArgumentException("Audio file is empty.");
+        }
+
+        // 2. Save Audio File using a fresh stream
+        string? audioUrl = null;
+        try
+        {
+            using var saveStream = new MemoryStream(audioBytes);
+            var saveResult = await _fileService.SaveFileAsync(saveStream, fileName, $"audio/speaking_practice/{userId}");
+            audioUrl = saveResult.Url;
+            _logger.LogInformation("Audio saved at: {Url}", audioUrl);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save audio file for speaking exercise.");
+        }
+
+        // 3. Transcribe Audio using another fresh stream
+        string transcription;
+        try 
+        {
+            using var transcribeStream = new MemoryStream(audioBytes);
+            transcription = await _aiGradingService.TranscribeAudioAsync(transcribeStream, fileName);
+            _logger.LogInformation("Audio transcribed successfully. Length: {Length}", transcription.Length);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to transcribe audio for ExerciseId: {ExerciseId}", speakingExerciseId);
+            throw new InvalidOperationException($"Failed to transcribe audio: {ex.Message}", ex);
+        }
+
+        // 2. Reuse EvaluateAsync logic
+        var request = new EvaluateSpeakingRequest
+        {
+            UserId = userId,
+            TargetBand = targetBand,
+            AnswerText = transcription,
+            AudioUrl = audioUrl
+        };
+
+        return await EvaluateAsync(speakingExerciseId, request);
+    }
+
     private async Task<EvaluateSpeakingResponse> SaveAttemptAsync(
         int speakingExerciseId, 
         EvaluateSpeakingRequest request,
@@ -214,7 +279,8 @@ public class SpeakingExerciseService : ISpeakingExerciseService
             part = exerciseData.Part,
             topic = exerciseData.Topic,
             level = exerciseData.Level,
-            targetBand = request.TargetBand
+            targetBand = request.TargetBand,
+            audioUrl = request.AudioUrl
         };
         string userAnswerJson = JsonSerializer.Serialize(payload);
 
@@ -242,7 +308,8 @@ public class SpeakingExerciseService : ISpeakingExerciseService
             AttemptId = attempt.Id,
             Score = aiFeedback.OverallBand,
             MaxScore = 9.0,
-            Feedback = feedbackJson
+            Feedback = feedbackJson,
+            UserText = request.AnswerText
         };
     }
 
@@ -273,15 +340,15 @@ public class SpeakingExerciseService : ISpeakingExerciseService
         3. **Grammatical Range & Accuracy**: Grammar usage and accuracy
         4. **Pronunciation**: Clarity and accuracy of pronunciation
 
-        Provide:
+        Provide all feedback in Vietnamese:
         - An overall band score (0-9)
         - Individual scores for each criterion (Fluency, Lexical, Grammar, Pronunciation)
-        - Strengths of the answer
-        - Areas for improvement
-        - Specific corrections with explanations
-        - A better answer example
+        - Strengths (Điểm mạnh)
+        - Areas for improvement (Cần cải thiện)
+        - Specific corrections with explanations (Các lỗi sai và giải thích bằng tiếng Việt)
+        - A better answer example (Câu trả lời mẫu tốt hơn)
 
-        Be constructive and beginner-friendly in your feedback.";
+        Be constructive, polite, and beginner-friendly in your Vietnamese feedback. All textual analysis MUST be in Vietnamese. Only the example answer parts can be in English.";
 
         return prompt;
     }
@@ -295,6 +362,7 @@ public class SpeakingExerciseService : ISpeakingExerciseService
             Part = e.Part, // TPH: Nullable field
             Question = e.Question,
             Topic = e.Topic,
+            CueCardJson = e.CueCardJson,
             Level = e.Level,
             Tips = e.Tips,
             IsActive = e.IsActive,
