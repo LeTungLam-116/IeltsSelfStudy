@@ -34,7 +34,7 @@ function WritingHistoryPage() {
 
     (async () => {
       try {
-        const data = await getAttemptsByUser(userId);
+        const data = await getAttemptsByUser();
         if (cancelled) return;
         setState({ items: data, loading: false, error: null });
       } catch (err) {
