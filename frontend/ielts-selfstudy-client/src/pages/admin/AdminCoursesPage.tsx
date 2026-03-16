@@ -101,7 +101,6 @@ export default function AdminCoursesPage() {
   );
 
   const categories = ['Writing', 'Speaking', 'Listening', 'Reading'];
-  const difficulties = ['Beginner', 'Intermediate', 'Advanced'];
 
   const handleEditCourse = (course: Course) => {
     setSelectedCourse(course);

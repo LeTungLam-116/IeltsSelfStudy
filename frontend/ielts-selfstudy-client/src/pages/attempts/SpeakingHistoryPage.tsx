@@ -13,7 +13,7 @@ function SpeakingHistoryPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getAttemptsByUser(userId)
+    getAttemptsByUser()
       .then(setItems)
       .catch(console.error)
       .finally(() => setLoading(false));
