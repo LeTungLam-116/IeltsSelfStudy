@@ -8,6 +8,7 @@ export default function Header() {
     const location = useLocation();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [practiceOpen, setPracticeOpen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const isActive = (path: string) => location.pathname === path;
     const isPracticeActive = ['/listening', '/reading', '/writing', '/speaking'].some(path => location.pathname.startsWith(path));
@@ -85,10 +86,10 @@ export default function Header() {
                     </div>
                 </Link>
 
-                {/* Navigation - Giữa */}
+                {/* Navigation - Desktop */}
                 <nav
+                    className="hidden lg:flex"
                     style={{
-                        display: 'flex',
                         alignItems: 'center',
                         gap: '0.5rem',
                         justifyContent: 'center',
@@ -243,8 +244,9 @@ export default function Header() {
 
                 {/* Right Area */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
-                    {/* Nút Bắt đầu học kiểu Prep - Luôn hiển thị hoặc nổi bật */}
+                    {/* Nút Bắt đầu học - Ẩn trên mobile */}
                     <button
+                        className="hidden sm:flex"
                         onClick={() => navigate(user ? '/dashboard' : '/courses')}
                         style={{
                             backgroundColor: '#ff7d00', // Màu cam đặc trưng của Prep
@@ -397,8 +399,37 @@ export default function Header() {
                             </div>
                         </div>
                     )}
+                    {/* Mobile Menu Toggle Button */}
+                    <button
+                        className="lg:hidden flex items-center justify-center p-2 rounded-md text-gray-600 hover:bg-gray-100 transition-colors"
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            {mobileMenuOpen 
+                                ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            }
+                        </svg>
+                    </button>
                 </div>
             </div>
+
+            {/* Mobile Navigation Menu */}
+            {mobileMenuOpen && (
+                <div className="lg:hidden bg-white border-t border-gray-100 shadow-lg absolute top-[72px] left-0 w-full flex flex-col p-4 gap-2 z-50">
+                    <Link to="/home" onClick={() => setMobileMenuOpen(false)} style={getLinkStyle(isActive('/home') || isActive('/'))}>Trang chủ</Link>
+                    <Link to="/courses" onClick={() => setMobileMenuOpen(false)} style={getLinkStyle(isActive('/courses'))}>Khóa học</Link>
+                    <Link to="/placement-test" onClick={() => setMobileMenuOpen(false)} style={getLinkStyle(isActive('/placement-test'))}>Kiểm tra đầu vào</Link>
+                    
+                    <div className="border-t border-gray-100 pt-2 mt-2">
+                        <p className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Luyện tập</p>
+                        <Link to="/listening" onClick={() => setMobileMenuOpen(false)} style={getLinkStyle(isActive('/listening'))}>🎧 Listening</Link>
+                        <Link to="/reading" onClick={() => setMobileMenuOpen(false)} style={getLinkStyle(isActive('/reading'))}>📚 Reading</Link>
+                        <Link to="/writing" onClick={() => setMobileMenuOpen(false)} style={getLinkStyle(isActive('/writing'))}>✍️ Writing</Link>
+                        <Link to="/speaking" onClick={() => setMobileMenuOpen(false)} style={getLinkStyle(isActive('/speaking'))}>🗣️ Speaking</Link>
+                    </div>
+                </div>
+            )}
         </header>
     );
 }
