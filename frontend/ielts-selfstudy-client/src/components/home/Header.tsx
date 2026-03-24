@@ -8,7 +8,6 @@ export default function Header() {
     const location = useLocation();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [practiceOpen, setPracticeOpen] = useState(false);
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const isActive = (path: string) => location.pathname === path;
     const isPracticeActive = ['/listening', '/reading', '/writing', '/speaking'].some(path => location.pathname.startsWith(path));
@@ -88,8 +87,8 @@ export default function Header() {
 
                 {/* Navigation - Giữa */}
                 <nav
-                    className="hidden lg:flex"
                     style={{
+                        display: 'flex',
                         alignItems: 'center',
                         gap: '0.5rem',
                         justifyContent: 'center',
@@ -243,7 +242,7 @@ export default function Header() {
                 </nav>
 
                 {/* Right Area */}
-                <div className="hidden lg:flex" style={{ alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
                     {/* Nút Bắt đầu học kiểu Prep - Luôn hiển thị hoặc nổi bật */}
                     <button
                         onClick={() => navigate(user ? '/dashboard' : '/courses')}
@@ -399,92 +398,7 @@ export default function Header() {
                         </div>
                     )}
                 </div>
-
-                {/* Mobile Menu Button - Right Content on Mobile */}
-                <div className="flex lg:hidden items-center gap-3">
-                    <button
-                        onClick={() => navigate(user ? '/dashboard' : '/courses')}
-                        style={{
-                            backgroundColor: '#ff7d00',
-                            color: 'white',
-                            padding: '6px 14px',
-                            borderRadius: '8px',
-                            fontWeight: 700,
-                            fontSize: '13px',
-                            border: 'none',
-                        }}
-                    >
-                        🚀 {user ? 'Vào học' : 'Bắt đầu'}
-                    </button>
-                    
-                    {user && (
-                        <div
-                            style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '50%',
-                                background: 'linear-gradient(135deg, #0071f9 0%, #00b4d8 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: 'white',
-                                fontWeight: 'bold',
-                                fontSize: '12px'
-                            }}
-                            onClick={() => navigate('/profile')}
-                        >
-                            {user.fullName?.charAt(0).toUpperCase() || 'U'}
-                        </div>
-                    )}
-
-                    <button 
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="p-2 text-gray-700 bg-gray-50 rounded-lg border border-gray-200"
-                    >
-                        {mobileMenuOpen ? (
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                        ) : (
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                        )}
-                    </button>
-                </div>
             </div>
-
-            {/* Mobile Drawer Menu */}
-            {mobileMenuOpen && (
-                <div className="lg:hidden fixed inset-0 z-[999] bg-black bg-opacity-50 flex flex-col justify-end transition-opacity duration-300">
-                    <div className="bg-white w-full rounded-t-3xl p-6 shadow-2xl safe-area-bottom pb-8 transform transition-transform duration-300">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="font-bold text-lg text-gray-800">Menu Hệ Thống</h3>
-                            <button onClick={() => setMobileMenuOpen(false)} className="p-2 bg-gray-100 rounded-full text-gray-600">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                        </div>
-                        
-                        <div className="flex flex-col gap-3">
-                            <Link onClick={() => setMobileMenuOpen(false)} to="/home" className={`p-4 rounded-xl font-medium ${isActive('/home') || isActive('/') ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-700'}`}>🏠 Trang chủ</Link>
-                            <Link onClick={() => setMobileMenuOpen(false)} to="/courses" className={`p-4 rounded-xl font-medium ${isActive('/courses') ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-700'}`}>📚 Khóa học</Link>
-                            <Link onClick={() => setMobileMenuOpen(false)} to="/placement-test" className={`p-4 rounded-xl font-medium ${isActive('/placement-test') ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-700'}`}>🎯 Kiểm tra đầu vào</Link>
-                            
-                            <div className="p-4 bg-gray-50 rounded-xl">
-                                <p className="font-semibold text-gray-500 text-sm mb-3">LUYỆN TẬP KỸ NĂNG</p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <Link onClick={() => setMobileMenuOpen(false)} to="/listening" className="flex items-center gap-2 bg-white p-3 rounded-lg shadow-sm font-medium text-gray-700 text-sm">🎧 Listening</Link>
-                                    <Link onClick={() => setMobileMenuOpen(false)} to="/reading" className="flex items-center gap-2 bg-white p-3 rounded-lg shadow-sm font-medium text-gray-700 text-sm">📖 Reading</Link>
-                                    <Link onClick={() => setMobileMenuOpen(false)} to="/writing" className="flex items-center gap-2 bg-white p-3 rounded-lg shadow-sm font-medium text-gray-700 text-sm">✍️ Writing</Link>
-                                    <Link onClick={() => setMobileMenuOpen(false)} to="/speaking" className="flex items-center gap-2 bg-white p-3 rounded-lg shadow-sm font-medium text-gray-700 text-sm">🗣️ Speaking</Link>
-                                </div>
-                            </div>
-                        </div>
-
-                        {!user ? (
-                            <button onClick={() => { setMobileMenuOpen(false); navigate('/login'); }} className="mt-6 w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center">Đăng nhập / Đăng ký</button>
-                        ) : (
-                            <button onClick={() => { setMobileMenuOpen(false); logout(); }} className="mt-6 w-full py-4 rounded-xl bg-red-50 text-red-600 font-bold text-center flex items-center justify-center gap-2">🚪 Đăng xuất</button>
-                        )}
-                    </div>
-                </div>
-            )}
         </header>
     );
 }
