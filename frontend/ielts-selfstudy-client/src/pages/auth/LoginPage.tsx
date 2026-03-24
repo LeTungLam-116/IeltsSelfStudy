@@ -157,8 +157,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="auth-font-wrapper fixed inset-0 h-screen w-full animated-gradient flex items-center justify-center overflow-auto p-4">
-      <div className="form-container bg-white rounded-3xl shadow-2xl p-6 sm:p-10 md:p-12 w-full max-w-md slide-in my-auto">
+    <div className="auth-font-wrapper min-h-screen w-full animated-gradient flex flex-col items-center justify-center py-10 px-4">
+      <div className="form-container bg-white rounded-3xl shadow-2xl p-6 sm:p-10 md:p-12 w-full max-w-md slide-in mt-4 md:mt-0">
 
         {/* Logo and Branding (Synchronized with Home Page) */}
         <div className="text-center mb-8">
