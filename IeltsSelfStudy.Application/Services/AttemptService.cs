@@ -1,4 +1,4 @@
-﻿using IeltsSelfStudy.Application.DTOs.Attempts;
+using IeltsSelfStudy.Application.DTOs.Attempts;
 using IeltsSelfStudy.Application.DTOs.Common;
 using IeltsSelfStudy.Application.Interfaces;
 using IeltsSelfStudy.Domain.Entities;
@@ -52,14 +52,9 @@ public class AttemptService : IAttemptService
 
     public async Task<AttemptDto?> GetByIdAsync(int id)
     {
-        _logger.LogDebug("Getting attempt by ID with details: {AttemptId}", id);
+        _logger.LogDebug("Getting attempt by ID: {AttemptId}", id);
         
-        // Include related entities so MapToDto can fill human-readable info
-        var entity = await _attemptRepo.GetAll()
-            .Include(a => a.User)
-            .Include(a => a.Exercise)
-            .FirstOrDefaultAsync(a => a.Id == id);
-
+        var entity = await _attemptRepo.GetByIdAsync(id);
         if (entity is null)
         {
             _logger.LogWarning("Attempt not found: {AttemptId}", id);
