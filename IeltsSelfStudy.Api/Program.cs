@@ -73,9 +73,14 @@ try
 
     builder.Services.AddAuthorization();
 
-    // ===== OUTPUT CACHE =====
-    // Cache phản hồi API trong RAM của server để giảm tải DB.
-    // Khi Admin thay đổi dữ liệu, cache sẽ được xóa chủ động theo Tag (Eviction)
+    // ===== OUTPUT CACHE (REDIS) =====
+    // Tự động sử dụng Redis phân tán để lưu cache, chống mất dữ liệu khi server restart.
+    builder.Services.AddStackExchangeRedisOutputCache(options =>
+    {
+        options.Configuration = builder.Configuration.GetConnectionString("Redis");
+        options.InstanceName = "IeltsApp_"; // Tiền tố tránh trùng lập Key
+    });
+
     builder.Services.AddOutputCache(options =>
     {
         // Policy mặc định: cache 5 phút cho tất cả GET requests
